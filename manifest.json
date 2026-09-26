@@ -1,0 +1,10 @@
+{
+  "name":"Brandon Partin Ministries Bible Study",
+  "short_name":"BPM Bible Study",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#07111f",
+  "theme_color":"#07111f",
+  "description":"Bible reading, study lessons, devotionals, notes, prayer journal and bookmarks.",
+  "icons":[]
+}

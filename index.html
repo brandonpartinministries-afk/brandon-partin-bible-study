@@ -94,7 +94,7 @@ body.light .topbar{background:rgba(244,247,251,.86)}
   <div class="card">
     <span class="pill">📖 Complete KJV Bible</span>
     <h1>Read the Bible</h1>
-    <p class="muted">The original 1611 King James Bible is loaded from a public-domain 80-book Bible corpus, including the Apocrypha. No AI is used.</p>
+    <p class="muted">The King James Version (standardized 1769 text) with Apocrypha is loaded from a public-domain Bible source. No AI is used.</p>
     <div id="bibleStatus" class="result">Loading the Bible…</div>
     <div class="grid2" style="margin-top:12px">
       <select id="bookSelect" aria-label="Choose Bible book"></select>
@@ -163,66 +163,80 @@ const verses = [
  {ref:"Psalm 46:10", text:"Be still, and know that I am God."},
  {ref:"Matthew 11:28", text:"Come unto me, all ye that labour and are heavy laden, and I will give you rest."}
 ];
-const KJV1611_BASE="https://cdn.jsdelivr.net/gh/aruljohn/Bible-kjv-1611@main/";
-const KJV1611_BOOKS_URL=KJV1611_BASE+"Books.json";
+const KJVA_API="https://api.getbible.net/v2/kjva.json";
+const KJVA_CACHE="bpm_kjva_1769_v1";
+const KJVA_ORDER=["Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth","1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles","Ezra","Nehemiah","Esther","Job","Psalms","Proverbs","Ecclesiastes","Song of Solomon","Isaiah","Jeremiah","Lamentations","Ezekiel","Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk","Zephaniah","Haggai","Zechariah","Malachi","Tobit","Judith","Esther (Greek)","Wisdom of Solomon","Sirach","Baruch","3 Holy Children's Song","Susanna","Bel and the Dragon","1 Maccabees","2 Maccabees","1 Esdras","Prayer of Manasses","2 Esdras","Matthew","Mark","Luke","John","Acts","Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians","Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus","Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John","Jude","Revelation"];
 let fullBible={books:[]}, bibleVerses=[], bibleBookData={};
-async function loadJson(url){const r=await fetch(url,{cache:"force-cache"});if(!r.ok)throw new Error("HTTP "+r.status+" "+url);return r.json()}
+async function loadJson(url){const r=await fetch(url,{cache:"no-store",mode:"cors"});if(!r.ok)throw new Error("HTTP "+r.status+" "+url);return r.json()}
 function setBibleStatus(msg,loading=false){const el=$("bibleStatus");if(el){el.textContent=msg;el.classList.toggle("loading",loading)}}
+function cleanBibleText(text){return String(text||"").replace(/<[^>]*>/g,"").replace(/\{[^}]*\}/g,"").replace(/\s+/g," ").trim()}
+function normalizeApiBook(raw){
+  const name=raw.book||raw.book_name||raw.name||raw.title;
+  if(!name)return null;
+  const aliases={"Psalm":"Psalms","Psalms":"Psalms","Song of Songs":"Song of Solomon","Song of Solomon":"Song of Solomon","Prayer of Manasseh":"Prayer of Manasses","Prayer of Manasses":"Prayer of Manasses","3 Maccabees":"3 Holy Children's Song"};
+  const bookName=aliases[name]||name;
+  let sourceChapters=raw.chapters||raw.Chapters;
+  if(sourceChapters&&typeof sourceChapters==="object"&&!Array.isArray(sourceChapters))sourceChapters=Object.values(sourceChapters);
+  if(!Array.isArray(sourceChapters))return null;
+  const chapters=sourceChapters.map((ch,ci)=>{
+    const chapterNo=Number(ch.chapter||ch.chapter_nr||ch.number||ci+1);
+    let vs=ch.verses||ch.Verses||[];
+    if(vs&&typeof vs==="object"&&!Array.isArray(vs))vs=Object.values(vs);
+    return {chapter:chapterNo,verses:(Array.isArray(vs)?vs:[]).map((v,vi)=>({verse:Number(v.verse||v.verse_nr||v.number||vi+1),text:cleanBibleText(v.text||v.verse||v.content||v.value||"")})).filter(v=>v.text)};
+  }).filter(c=>c.verses.length);
+  return {book:bookName,"chapter-count":String(chapters.length),chapters};
+}
+function parseApiBible(api){
+  let rawBooks=api.books||api.Books||api;
+  if(!Array.isArray(rawBooks)&&rawBooks&&typeof rawBooks==="object")rawBooks=Object.values(rawBooks);
+  const out=[]; if(!Array.isArray(rawBooks))return out;
+  rawBooks.forEach(raw=>{const b=normalizeApiBook(raw);if(b)out.push(b)});
+  return out;
+}
 function populateBibleSelectors(){
   const bs=$("bookSelect"), cs=$("chapterSelect"); if(!bs||!cs)return;
   bs.innerHTML=fullBible.books.map(b=>'<option>'+escapeHtml(b.book)+'</option>').join("");
-  bs.onchange=populateChapters;
-  populateChapters();
+  bs.onchange=populateChapters; populateChapters();
 }
 function populateChapters(){
-  const b=$("bookSelect").value, cs=$("chapterSelect");
-  const book=bibleBookData[b];
-  const count=Number(book?.["chapter-count"]||0);
+  const b=$("bookSelect").value, cs=$("chapterSelect"), book=bibleBookData[b];
+  const count=Number(book?.["chapter-count"]||book?.chapters?.length||0);
   cs.innerHTML=Array.from({length:count},(_,i)=>'<option value="'+(i+1)+'">Chapter '+(i+1)+'</option>').join("");
 }
 function openChapter(){
   const book=$("bookSelect").value, chapter=Number($("chapterSelect").value);
   const b=bibleBookData[book], c=(b?.chapters||[]).find(x=>Number(x.chapter)===chapter);
-  if(!c){toast("That book is still loading");return}
-  localStorage.setItem("bpm_continue",JSON.stringify({book,chapter}));
-  updateContinue();
+  if(!c){toast("That chapter is not available");return}
+  localStorage.setItem("bpm_continue",JSON.stringify({book,chapter})); updateContinue();
   const card=$("chapterCard"); card.hidden=false;
-  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+
-    c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button class="secondary" data-ref="'+escapeAttr(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button class="secondary" data-ref="'+escapeAttr(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function escapeAttr(x){return escapeHtml(x)}
-function normalizeBook(book){
-  const out=[];
-  (book.chapters||[]).forEach(ch=>(ch.verses||[]).forEach(v=>out.push({ref:book.book+" "+ch.chapter+":"+v.verse,text:v.text,book:book.book,chapter:Number(ch.chapter),verse:Number(v.verse)})));
-  return out;
-}
+function normalizeBook(book){return (book.chapters||[]).flatMap(ch=>(ch.verses||[]).map(v=>({ref:book.book+" "+ch.chapter+":"+v.verse,text:v.text,book:book.book,chapter:Number(ch.chapter),verse:Number(v.verse)})))}
 async function loadFullBible(){
   try{
-    setBibleStatus("Loading the original 1611 KJV — 80 books…",true);
-    const names=await loadJson(KJV1611_BOOKS_URL);
-    fullBible.books=names.map(name=>({book:name}));
-    populateBibleSelectors();
-    let loaded=0;
-    const batchSize=8;
-    for(let i=0;i<names.length;i+=batchSize){
-      const batch=names.slice(i,i+batchSize);
-      const books=await Promise.all(batch.map(async name=>{
-        const url=KJV1611_BASE+encodeURIComponent(name)+".json";
-        try { const data=await loadJson(url); try{localStorage.setItem("bpm_book_"+name,JSON.stringify(data));}catch(_){} return data; }
-        catch(e){ const cached=localStorage.getItem("bpm_book_"+name); if(cached)return JSON.parse(cached); throw e; }
-      }));
-      books.forEach(book=>{bibleBookData[book.book]=book;bibleVerses.push(...normalizeBook(book));});
-      loaded+=books.length;
-      setBibleStatus("Loading the original 1611 KJV… "+loaded+" of "+names.length+" books loaded.",true);
+    setBibleStatus("Loading KJV 1769 + Apocrypha…",true);
+    let api=null;
+    try{api=await loadJson(KJVA_API);}
+    catch(e){
+      const cached=localStorage.getItem(KJVA_CACHE); if(cached)api=JSON.parse(cached); else throw e;
     }
-    setBibleStatus("Original 1611 KJV ready — "+bibleVerses.length.toLocaleString()+" verses across "+names.length+" books.");
+    const books=parseApiBible(api);
+    if(!books.length)throw new Error("No books found in KJVA source");
+    try{localStorage.setItem(KJVA_CACHE,JSON.stringify(api));}catch(_){ }
+    const byName={}; books.forEach(b=>byName[b.book]=b);
+    const ordered=KJVA_ORDER.map(n=>byName[n]).filter(Boolean);
+    const extras=books.filter(b=>!ordered.includes(b));
+    fullBible.books=ordered.concat(extras).map(b=>({book:b.book}));
+    fullBible.books.forEach(({book})=>{bibleBookData[book]=byName[book];bibleVerses.push(...normalizeBook(byName[book]));});
     populateBibleSelectors();
+    setBibleStatus("KJV 1769 + Apocrypha ready — "+bibleVerses.length.toLocaleString()+" verses across "+fullBible.books.length+" books.");
   }catch(err){
     console.error(err);
-    setBibleStatus("The 1611 KJV could not be loaded. Check your internet connection and tap Retry.");
-    const el=$("bibleStatus"); if(el) el.innerHTML='The 1611 KJV could not be loaded. <button class="secondary" data-action="loadBible">Retry</button>';
+    setBibleStatus("The KJV 1769 + Apocrypha could not be loaded. Connect to the internet and tap Retry.");
+    const el=$("bibleStatus"); if(el) el.innerHTML='The KJV 1769 + Apocrypha could not be loaded. <button class="secondary" data-action="loadBible">Retry</button>';
   }
 }
 const lessons=[

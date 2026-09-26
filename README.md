@@ -1,9 +1,12 @@
 # Brandon Partin Ministries Bible Study
 
+## Bible version
+This build uses the **King James Version (standardized 1769 text) with Apocrypha/Deuterocanon**. The Bible data is loaded from the public-domain KJVA source at getBible/eBible lineage and cached by the app after it loads.
+
 ## GitHub Pages upload
 Upload the **contents of this folder** to the root of your existing GitHub repository. Do not upload the ZIP file itself.
 
-The repository root must contain:
+The repository root should contain:
 - index.html
 - manifest.json
 - sw.js
@@ -11,7 +14,7 @@ The repository root must contain:
 - apple-touch-icon.png
 - icon-192.png
 - icon-512.png
+- favicon-32.png
 - .nojekyll
-- logo.png
 
 Then enable GitHub Pages from **Settings → Pages → Deploy from a branch → main → / (root)**.

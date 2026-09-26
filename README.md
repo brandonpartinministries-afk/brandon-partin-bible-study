@@ -1,20 +1,17 @@
-# Brandon Partin Ministries — Bible Study
+# Brandon Partin Ministries Bible Study
 
-Polished mobile-first Bible Study PWA for iPhone and web.
+## GitHub Pages upload
+Upload the **contents of this folder** to the root of your existing GitHub repository. Do not upload the ZIP file itself.
 
-## Includes
-- 1611 KJV Bible loader (80-book corpus, including Apocrypha)
-- Bible search and chapter navigation
-- Continue reading
-- Bookmarks/favorites
-- Prayer journal and study notes
-- Guided Bible studies
-- Daily devotionals
-- Adjustable Scripture text size
-- Light/dark theme
-- Import individual JSON Bible books
-- Offline/service-worker caching after books have been loaded
-- iPhone Add to Home Screen support
+The repository root must contain:
+- index.html
+- manifest.json
+- sw.js
+- logo.png
+- apple-touch-icon.png
+- icons/icon-192.png
+- icons/icon-512.png
+- .nojekyll
+- assets/brandon-partin-ministries-logo-original.jpg
 
-## iPhone
-Open the hosted app in Safari, tap Share, then **Add to Home Screen**.
+Then enable GitHub Pages from **Settings → Pages → Deploy from a branch → main → / (root)**.

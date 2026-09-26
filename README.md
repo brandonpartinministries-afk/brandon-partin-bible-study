@@ -9,9 +9,9 @@ The repository root must contain:
 - sw.js
 - logo.png
 - apple-touch-icon.png
-- icons/icon-192.png
-- icons/icon-512.png
+- icon-192.png
+- icon-512.png
 - .nojekyll
-- assets/brandon-partin-ministries-logo-original.jpg
+- logo.png
 
 Then enable GitHub Pages from **Settings → Pages → Deploy from a branch → main → / (root)**.

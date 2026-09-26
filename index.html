@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>Brandon Partin Ministries Bible Study</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BPM Bible Study">
+<style>
+:root{--bg:#07111f;--panel:#0d1b2d;--panel2:#10243b;--text:#f4f7fb;--muted:#aeb9c8;--line:#29415d;--blue:#69a9ff;--silver:#d9e1ec;--good:#8bd3a8}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(180deg,#050c16,#091827 55%,#050b13);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+.top{position:sticky;top:0;z-index:20;background:rgba(5,12,22,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav{max-width:1100px;margin:auto;min-height:72px;padding:8px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.brand{display:flex;align-items:center;gap:10px}.brand img{width:48px;height:48px;object-fit:cover;border-radius:10px}.brand strong{font-size:15px}.brand small{display:block;color:var(--muted);font-size:12px}
+.navlinks{display:flex;gap:7px;flex-wrap:wrap}.navlinks button,.iconbtn{border:1px solid var(--line);background:#0c1929;color:var(--text);border-radius:9px;padding:8px 11px}
+.navlinks button.active,.primary{background:linear-gradient(135deg,#3d78bd,#1d4e88);border-color:#5d9ce4}
+main{max-width:1100px;margin:auto;padding:24px 18px 60px}.screen{display:none}.screen.active{display:block}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:25px;align-items:center;padding:22px 0}.heroLogo{width:min(100%,430px);display:block;margin:auto;border-radius:20px;box-shadow:0 18px 60px #0008}.eyebrow{color:#83baff;font-size:12px;font-weight:800;letter-spacing:2px}.hero h1{font-size:clamp(38px,6vw,66px);line-height:1;margin:10px 0}.hero p{color:var(--muted);line-height:1.7}
+.card{background:linear-gradient(180deg,#0d1b2d,#0b1726);border:1px solid var(--line);border-radius:17px;padding:20px;margin:16px 0;box-shadow:0 12px 35px #0004}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.tile{border:1px solid var(--line);border-radius:13px;padding:16px;background:#0e2033}.tile p,.muted{color:var(--muted)}.row{display:flex;justify-content:space-between;align-items:center;gap:12px}.stack{display:grid;gap:10px}
+.primary,.secondary,.danger{border-radius:10px;padding:10px 14px;border:1px solid var(--line);color:var(--text)}.primary{font-weight:700}.secondary{background:#0e2033}.danger{background:#351a20;border-color:#63313a}.pill{display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:999px;color:#bcd6f7;font-size:12px}
+input,textarea,select{width:100%;border:1px solid var(--line);background:#081524;color:var(--text);border-radius:10px;padding:12px;outline:none}textarea{min-height:170px;resize:vertical}input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+.result,.bookrow,.favrow{padding:13px 0;border-top:1px solid var(--line)}.result:first-child,.bookrow:first-child{border-top:0}.bookrow,.favrow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.verse{font-family:Georgia,serif;font-size:21px;line-height:1.75;color:#f6f1df}.verse sup{color:#75adf4;font-size:12px}.quote{border-left:3px solid #4e8ed2;padding-left:15px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#eaf3ff;color:#0a1725;padding:11px 16px;border-radius:999px;font-weight:700;box-shadow:0 10px 30px #0008;display:none;z-index:50}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
+@media(max-width:760px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.nav{align-items:flex-start}.navlinks{overflow-x:auto;flex-wrap:nowrap;max-width:58vw}.navlinks button{white-space:nowrap}.brand small{display:none}}
+.verseRow{padding:14px 0;border-bottom:1px solid var(--line);line-height:1.65}.verseNum{display:inline-block;min-width:34px;font-weight:700;color:var(--blue)}.bibleTools{display:flex;gap:8px;flex-wrap:wrap}.loading{opacity:.75}</style>
+<style>
+:root{--accent:#69a9ff;--shadow:0 14px 40px rgba(0,0,0,.22)}
+body{transition:background .2s,color .2s}.card,.tile{box-shadow:var(--shadow)}
+.navlinks{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);padding:8px 0}.navlinks button{min-height:44px}
+.searchRow{display:grid;grid-template-columns:1fr auto;gap:8px}.readingTools{display:flex;gap:8px;flex-wrap:wrap}.readingTools button{flex:1;min-width:90px}
+.settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.verseRow{line-height:1.8;padding:12px 0;border-bottom:1px solid var(--line);font-size:var(--verse-size,1.08rem)}.verseNum{display:inline-flex;min-width:30px;color:var(--accent);font-weight:800}.result{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}.tile{transition:transform .15s, border-color .15s}.tile:active{transform:scale(.98)}
+body.light{--bg:#f4f7fb;--panel:#fff;--panel2:#edf3fa;--text:#172033;--muted:#536078;--line:#d6deea;--blue:#1264c8;--silver:#24364d;--good:#167044;background:var(--bg);color:var(--text)}
+body.light .topbar{background:rgba(244,247,251,.86)}
+@media(max-width:600px){.settingsGrid{grid-template-columns:1fr}.topbar{padding:12px}.hero h1{font-size:1.8rem}}
+</style>
+
+</head>
+<body>
+<header class="top">
+<div class="nav">
+  <div class="brand">
+    <img id="brandLogo" alt="Brandon Partin Ministries logo">
+    <div><strong>Brandon Partin Ministries</strong><small>Bible Study</small></div>
+  </div>
+  <nav class="navlinks" aria-label="Main navigation">
+    <button data-screen="home" class="active">Home</button>
+    <button data-screen="bible">Bible</button>
+    <button data-screen="studies">Studies</button>
+    <button data-screen="journal">Journal</button>
+    <button data-screen="settings">Settings</button>
+  </nav>
+</div>
+</header>
+
+<main>
+<section id="home" class="screen active">
+  <div class="hero">
+    <div>
+      <div class="eyebrow">FAITH · HOPE · SERVICE</div>
+      <h1>Make space for Scripture.</h1>
+      <p>Read the Bible, search passages, study Scripture, save prayers and notes, and keep favorite verses in one place.</p>
+      <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
+        <button class="primary" data-action="today">🌅 Today's devotional</button>
+        <button class="secondary" data-action="openBible">📖 Open Bible</button>
+      </div>
+    </div>
+    <img id="heroLogo" class="heroLogo" alt="Brandon Partin Ministries">
+  </div>
+  <div class="grid">
+    <div class="tile"><b>📖 Bible</b><p>Browse and search a starter Scripture library.</p><button class="secondary" data-action="openBible">Open</button></div>
+    <div class="tile"><b>📚 Studies</b><p>Work through guided Bible study lessons.</p><button class="secondary" data-action="openStudies">Study</button></div>
+    <div class="tile"><b>🙏 Journal</b><p>Save prayers, notes and favorite verses.</p><button class="secondary" data-action="openJournal">Journal</button></div>
+  </div>
+  <div class="card" id="continueCard" hidden><span class="pill">▶ Continue reading</span><h2 id="continueTitle">Continue</h2><p id="continueText" class="muted"></p><button class="primary" data-action="continueReading">Continue</button></div>
+  <div class="card">
+    <span class="pill">🌅 Daily devotional</span>
+    <h2 id="homeDevTitle">Be Still</h2>
+    <p id="homeDevText" class="muted"></p>
+    <button class="secondary" data-action="today">Read devotional</button>
+  </div>
+</section>
+
+<section id="bible" class="screen">
+  <div class="card">
+    <span class="pill">📖 Complete KJV Bible</span>
+    <h1>Read the Bible</h1>
+    <p class="muted">The original 1611 King James Bible is loaded from a public-domain 80-book Bible corpus, including the Apocrypha. No AI is used.</p>
+    <div id="bibleStatus" class="result">Loading the Bible…</div>
+    <div class="grid2" style="margin-top:12px">
+      <select id="bookSelect" aria-label="Choose Bible book"></select>
+      <select id="chapterSelect" aria-label="Choose chapter"></select>
+    </div>
+    <button class="primary" data-action="openChapter" style="margin-top:12px">📖 Open Chapter</button>
+    <div class="searchRow"><input id="search" placeholder="🔍 Search the entire Bible" style="margin-top:12px"><button class="secondary" data-action="clearSearch" style="margin-top:12px">Clear</button></div>
+    <div id="searchResults" style="margin-top:10px"></div>
+  </div>
+  <div class="card readingTools"><button class="secondary" data-action="prevChapter">← Previous</button><button class="secondary" data-action="nextChapter">Next →</button><button class="secondary" data-action="fontMinus">A−</button><button class="secondary" data-action="fontPlus">A+</button></div>
+  <div id="chapterCard" class="card" hidden></div>
+  <div id="verseCard" class="card" hidden></div>
+</section>
+
+<section id="studies" class="screen">
+  <div class="card"><span class="pill">📚 Bible study lessons</span><h1>Study Scripture</h1><p class="muted">Choose a lesson to open the study.</p></div>
+  <div class="grid" id="lessonGrid"></div>
+  <div id="lessonCard" class="card" hidden></div>
+</section>
+
+<section id="journal" class="screen">
+  <div class="card"><span class="pill">🙏 Prayer journal</span><h1>Prayer</h1>
+    <textarea id="prayer" placeholder="Write your prayer..."></textarea><br><br>
+    <button class="primary" data-action="savePrayer">Save prayer</button> <span id="prayerStatus" class="muted"></span>
+  </div>
+  <div class="card"><span class="pill">📝 Personal notes</span><h2>Notes</h2>
+    <textarea id="notes" placeholder="Write notes from your study..."></textarea><br><br>
+    <button class="primary" data-action="saveNotes">Save notes</button> <span id="notesStatus" class="muted"></span>
+  </div>
+  <div class="card"><span class="pill">❤️ Favorites</span><h2>Bookmarked verses</h2><div id="favorites"></div></div>
+</section>
+
+<section id="settings" class="screen">
+  <div class="card"><span class="pill">⚙️ Settings</span><h1>Settings</h1>
+    <label><input id="reminders" type="checkbox" style="width:auto;margin-right:8px"> 🔔 Enable daily reminder</label>
+    <p class="muted">This saves your preference on this device. Browser notification support depends on where the app is hosted.</p>
+    <div class="settingsGrid">
+      <button class="secondary" data-action="toggleTheme">🌙 Toggle dark/light</button>
+      <button class="secondary" data-action="installApp" id="installBtn" hidden>📲 Install app</button>
+    </div>
+    <button class="secondary" data-action="notifyTest">Test notification</button>
+    <button class="secondary" data-action="importBible">📥 Import Bible file</button>
+    <input id="bibleFile" type="file" accept=".json,.txt,.json.txt" hidden>
+    <button class="danger" data-action="clearData">Clear saved data</button>
+  </div>
+</section>
+
+<section id="devotional" class="screen">
+  <div class="card"><span class="pill">🌅 Daily devotional</span><h1 id="devTitle"></h1><p id="devText" class="quote"></p><p><b>Scripture:</b> <span id="devRef"></span></p>
+    <button class="primary" data-action="nextDevotional">Another devotional</button>
+  </div>
+</section>
+</main>
+<div id="toast" class="toast"></div>
+<footer>Brandon Partin Ministries Bible Study · No AI features</footer>
+
+<script>
+(function(){
+const LOGO_URI = "logo.png";
+const verses = [
+ {ref:"Genesis 1:1", text:"In the beginning God created the heaven and the earth."},
+ {ref:"John 3:16", text:"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."},
+ {ref:"Psalm 23:1-2", text:"The LORD is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters."},
+ {ref:"Romans 8:28", text:"And we know that all things work together for good to them that love God, to them who are the called according to his purpose."},
+ {ref:"Philippians 4:6-7", text:"Be careful for nothing; but in every thing by prayer and supplication with thanksgiving let your requests be made known unto God. And the peace of God... shall keep your hearts and minds through Christ Jesus."},
+ {ref:"Psalm 46:10", text:"Be still, and know that I am God."},
+ {ref:"Matthew 11:28", text:"Come unto me, all ye that labour and are heavy laden, and I will give you rest."}
+];
+const KJV1611_BASE="https://cdn.jsdelivr.net/gh/aruljohn/Bible-kjv-1611@main/";
+const KJV1611_BOOKS_URL=KJV1611_BASE+"Books.json";
+let fullBible={books:[]}, bibleVerses=[], bibleBookData={};
+async function loadJson(url){const r=await fetch(url,{cache:"force-cache"});if(!r.ok)throw new Error("HTTP "+r.status+" "+url);return r.json()}
+function setBibleStatus(msg,loading=false){const el=$("bibleStatus");if(el){el.textContent=msg;el.classList.toggle("loading",loading)}}
+function populateBibleSelectors(){
+  const bs=$("bookSelect"), cs=$("chapterSelect"); if(!bs||!cs)return;
+  bs.innerHTML=fullBible.books.map(b=>'<option>'+escapeHtml(b.book)+'</option>').join("");
+  bs.onchange=populateChapters;
+  populateChapters();
+}
+function populateChapters(){
+  const b=$("bookSelect").value, cs=$("chapterSelect");
+  const book=bibleBookData[b];
+  const count=Number(book?.["chapter-count"]||0);
+  cs.innerHTML=Array.from({length:count},(_,i)=>'<option value="'+(i+1)+'">Chapter '+(i+1)+'</option>').join("");
+}
+function openChapter(){
+  const book=$("bookSelect").value, chapter=Number($("chapterSelect").value);
+  const b=bibleBookData[book], c=(b?.chapters||[]).find(x=>Number(x.chapter)===chapter);
+  if(!c){toast("That book is still loading");return}
+  localStorage.setItem("bpm_continue",JSON.stringify({book,chapter}));
+  updateContinue();
+  const card=$("chapterCard"); card.hidden=false;
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+
+    c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button class="secondary" data-ref="'+escapeAttr(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
+  showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function escapeHtml(x){return String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function escapeAttr(x){return escapeHtml(x)}
+function normalizeBook(book){
+  const out=[];
+  (book.chapters||[]).forEach(ch=>(ch.verses||[]).forEach(v=>out.push({ref:book.book+" "+ch.chapter+":"+v.verse,text:v.text,book:book.book,chapter:Number(ch.chapter),verse:Number(v.verse)})));
+  return out;
+}
+async function loadFullBible(){
+  try{
+    setBibleStatus("Loading the original 1611 KJV — 80 books…",true);
+    const names=await loadJson(KJV1611_BOOKS_URL);
+    fullBible.books=names.map(name=>({book:name}));
+    populateBibleSelectors();
+    let loaded=0;
+    const batchSize=8;
+    for(let i=0;i<names.length;i+=batchSize){
+      const batch=names.slice(i,i+batchSize);
+      const books=await Promise.all(batch.map(async name=>{
+        const url=KJV1611_BASE+encodeURIComponent(name)+".json";
+        try { const data=await loadJson(url); try{localStorage.setItem("bpm_book_"+name,JSON.stringify(data));}catch(_){} return data; }
+        catch(e){ const cached=localStorage.getItem("bpm_book_"+name); if(cached)return JSON.parse(cached); throw e; }
+      }));
+      books.forEach(book=>{bibleBookData[book.book]=book;bibleVerses.push(...normalizeBook(book));});
+      loaded+=books.length;
+      setBibleStatus("Loading the original 1611 KJV… "+loaded+" of "+names.length+" books loaded.",true);
+    }
+    setBibleStatus("Original 1611 KJV ready — "+bibleVerses.length.toLocaleString()+" verses across "+names.length+" books.");
+    populateBibleSelectors();
+  }catch(err){
+    console.error(err);
+    setBibleStatus("The 1611 KJV could not be loaded. Check your internet connection and tap Retry.");
+    const el=$("bibleStatus"); if(el) el.innerHTML='The 1611 KJV could not be loaded. <button class="secondary" data-action="loadBible">Retry</button>';
+  }
+}
+const lessons=[
+ {title:"Trusting God",ref:"Psalm 23",text:"Explore God as shepherd, provider and guide.",qs:["What stands out in Psalm 23?","What does the passage reveal about God?","What is one way you can trust God today?"]},
+ {title:"Abiding in Christ",ref:"John 15:1-5",text:"Reflect on what it means to remain connected to Christ.",qs:["What does Jesus mean by abide?","What helps you stay connected to God?","What fruit would you like to see grow?"]},
+ {title:"Peace in Anxiety",ref:"Philippians 4:6-7",text:"Consider how prayer and thanksgiving shape a response to worry.",qs:["What concern can you bring to God?","What can you thank God for today?","What peaceful next step can you take?"]}
+];
+const devotionals=[
+ {title:"Be Still",ref:"Psalm 46:10",text:"Take a few quiet minutes today. Read Psalm 46:10 slowly and consider where you need to stop striving and trust God."},
+ {title:"A Grateful Heart",ref:"1 Thessalonians 5:18",text:"Name three gifts from God today. Spend a moment giving thanks for each one."},
+ {title:"Walk by Faith",ref:"2 Corinthians 5:7",text:"Think about one faithful step you can take today even when you cannot see the whole path."}
+];
+let devIndex=0;
+
+function $(id){return document.getElementById(id)}
+function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800)}
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id));window.scrollTo({top:0,behavior:"smooth"})}
+function renderDevotional(){const d=devotionals[devIndex];$("devTitle").textContent=d.title;$("devText").textContent=d.text;$("devRef").textContent=d.ref;$("homeDevTitle").textContent=d.title;$("homeDevText").textContent=d.text}
+function openVerse(ref){
+  const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref); if(!v)return;
+  const card=$("verseCard"); card.hidden=false;
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(v.ref)+'</span><div class="verse" style="margin-top:14px">'+escapeHtml(v.text)+'</div><br><button class="primary" data-bookmark="'+encodeURIComponent(v.ref)+'">❤️ Bookmark</button>';
+  showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function search(){
+  const q=$("search").value.trim().toLowerCase(), box=$("searchResults");
+  if(!q){box.innerHTML="";return}
+  const source=bibleVerses.length?bibleVerses:verses;
+  const hits=source.filter(v=>(v.ref+" "+v.text).toLowerCase().includes(q)).slice(0,80);
+  box.innerHTML=hits.length?'<p class="muted">Showing up to 80 matches.</p>'+hits.map(v=>'<div class="result"><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p><button class="secondary" data-ref="'+escapeAttr(v.ref)+'">Open</button></div>').join(""):"<p class='muted'>No match found.</p>";
+}
+function save(key,field,status){localStorage.setItem("bpm_"+key,$(field).value);$(status).textContent="Saved.";toast("Saved")}
+function favorites(){return JSON.parse(localStorage.getItem("bpm_favorites")||"[]")}
+function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No bookmarked verses yet.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+v.ref+'</b><p class="muted">'+v.text+'</p></div><button class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
+function addFavorite(ref){const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref);if(!v)return;const a=favorites();if(!a.some(x=>x.ref===ref)){a.push(v);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Verse bookmarked")}else toast("Already bookmarked")}
+function removeFavorite(i){const a=favorites();a.splice(i,1);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Removed")}
+function renderLessons(){$("lessonGrid").innerHTML=lessons.map((l,i)=>'<div class="tile"><b>'+l.title+'</b><p class="muted">'+l.ref+'</p><p>'+l.text+'</p><button class="secondary" data-lesson="'+i+'">Open lesson</button></div>').join("")}
+function openLesson(i){const l=lessons[i];$("lessonCard").hidden=false;$("lessonCard").innerHTML='<span class="pill">'+l.ref+'</span><h2>'+l.title+'</h2><p>'+l.text+'</p>'+l.qs.map((q,n)=>'<div class="result"><b>'+String(n+1).padStart(2,"0")+' · '+q+'</b></div>').join("")+'<br><button class="primary" data-action="openJournal">Write reflection</button>';showScreen("studies");$("lessonCard").scrollIntoView({behavior:"smooth",block:"center"})}
+function nextDev(){devIndex=(devIndex+1)%devotionals.length;renderDevotional();showScreen("devotional")}
+function clearData(){if(confirm("Clear saved prayers, notes, favorites and settings?")){["bpm_prayer","bpm_notes","bpm_favorites","bpm_reminders"].forEach(k=>localStorage.removeItem(k));location.reload()}}
+function notifyTest(){if(!("Notification" in window)){toast("Notifications aren't supported here");return}if(Notification.permission==="granted")new Notification("Brandon Partin Ministries",{body:"Time for Bible study."});else Notification.requestPermission().then(p=>{if(p==="granted")new Notification("Brandon Partin Ministries",{body:"Time for Bible study."});else toast("Notification permission not granted")})}
+
+function updateContinue(){const x=JSON.parse(localStorage.getItem("bpm_continue")||"null");const card=$("continueCard");if(!x||!card)return;card.hidden=false;$("continueTitle").textContent=x.book+" "+x.chapter;$("continueText").textContent="Pick up where you left off.";}
+function continueReading(){const x=JSON.parse(localStorage.getItem("bpm_continue")||"null");if(!x)return;showScreen("bible");if($("bookSelect")){$("bookSelect").value=x.book;populateChapters();$("chapterSelect").value=String(x.chapter);openChapter();}}
+function chapterMove(delta){const b=$("bookSelect").value;const idx=fullBible.books.findIndex(x=>x.book===b);let ci=Number($("chapterSelect").value||1)+delta;let bi=idx;if(ci<1){bi=Math.max(0,idx-1);ci=Number(bibleBookData[fullBible.books[bi]?.book]?.["chapter-count"]||1);}else{const count=Number(bibleBookData[b]?.["chapter-count"]||0);if(count&&ci>count){bi=Math.min(fullBible.books.length-1,idx+1);ci=1;}}if(fullBible.books[bi]){$("bookSelect").value=fullBible.books[bi].book;populateChapters();$("chapterSelect").value=String(ci);openChapter();}}
+function setFont(delta){let n=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--verse-size"))||1.08;n=Math.max(.9,Math.min(1.5,n+delta));document.documentElement.style.setProperty("--verse-size",n+"rem");localStorage.setItem("bpm_font",n);}
+function toggleTheme(){document.body.classList.toggle("light");localStorage.setItem("bpm_theme",document.body.classList.contains("light")?"light":"dark");}
+let deferredInstall=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;const b=$("installBtn");if(b)b.hidden=false;});
+async function installApp(){if(!deferredInstall){toast("On iPhone, use Share → Add to Home Screen.");return;}deferredInstall.prompt();deferredInstall=null;}
+function clearSearch(){$("search").value="";$('searchResults').innerHTML="";}
+document.addEventListener("click",function(e){
+ const nav=e.target.closest("[data-screen]");if(nav){showScreen(nav.dataset.screen);return}
+ const ref=e.target.closest("[data-ref]");if(ref){openVerse(ref.dataset.ref);return}
+ const bm=e.target.closest("[data-bookmark]");if(bm){addFavorite(decodeURIComponent(bm.dataset.bookmark));return}
+ const rem=e.target.closest("[data-remove]");if(rem){removeFavorite(Number(rem.dataset.remove));return}
+ const lesson=e.target.closest("[data-lesson]");if(lesson){openLesson(Number(lesson.dataset.lesson));return}
+ const action=e.target.closest("[data-action]");if(!action)return;
+ switch(action.dataset.action){
+  case"today":showScreen("devotional");break;
+  case"nextDevotional":nextDev();break;
+  case"openBible":showScreen("bible");break;
+  case"openStudies":showScreen("studies");break;
+  case"openJournal":showScreen("journal");break;
+  case"savePrayer":save("prayer","prayer","prayerStatus");break;
+  case"saveNotes":save("notes","notes","notesStatus");break;
+  case"clearData":clearData();break;
+  case"notifyTest":notifyTest();break;
+  case"openChapter":openChapter();break;
+  case"loadBible":loadFullBible();break;
+ }
+});
+$("search").addEventListener("input",search);
+populateBibleSelectors();
+loadFullBible();
+$("prayer").value=localStorage.getItem("bpm_prayer")||"";
+$("notes").value=localStorage.getItem("bpm_notes")||"";
+$("reminders").checked=localStorage.getItem("bpm_reminders")==="1";
+$("reminders").addEventListener("change",e=>{localStorage.setItem("bpm_reminders",e.target.checked?"1":"0");toast(e.target.checked?"Reminder enabled":"Reminder disabled")});
+$("brandLogo").src=LOGO_URI;$("heroLogo").src=LOGO_URI;
+renderLessons();renderFavorites();renderDevotional();
+$("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const text=await f.text();const data=JSON.parse(text);const book=data.book||data.title;if(!book)throw new Error("No book name");localStorage.setItem("bpm_book_"+book,JSON.stringify(data));bibleBookData[book]=data;if(!fullBible.books.some(x=>x.book===book))fullBible.books.push({book});bibleVerses.push(...normalizeBook(data));populateBibleSelectors();toast(book+" imported");}catch(err){toast("Could not import that Bible file");}});
+if(localStorage.getItem("bpm_theme")==="light")document.body.classList.add("light");
+if(localStorage.getItem("bpm_font"))document.documentElement.style.setProperty("--verse-size",localStorage.getItem("bpm_font")+"rem");
+updateContinue();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+})();
+</script>
+</body>
+</html>

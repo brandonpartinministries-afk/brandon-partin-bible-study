@@ -1,5 +1,5 @@
-const CACHE='bpm-bible-v8-logo';
-const APP=['./','./index.html','./manifest.json?v=8','./logo.png','./bpm-home-icon-v8.png?v=8','./icon-192.png?v=8','./icon-512.png?v=8'];
+const CACHE='bpm-bible-v6-icon-fix';
+const APP=['./','./index.html','./manifest.json','./logo.png','./apple-touch-icon.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{

@@ -361,7 +361,7 @@ $("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];
 if(localStorage.getItem("bpm_theme")==="light")document.body.classList.add("light");
 if(localStorage.getItem("bpm_font"))document.documentElement.style.setProperty("--verse-size",localStorage.getItem("bpm_font")+"rem");
 updateContinue();
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});navigator.serviceWorker.register("sw.js").then(r=>r.update&&r.update()).catch(()=>{});}
 
 })();
 </script>

@@ -18,3 +18,6 @@ The repository root should contain:
 - .nojekyll
 
 Then enable GitHub Pages from **Settings → Pages → Deploy from a branch → main → / (root)**.
+
+## Updating an installed copy
+After uploading new files, open the app once while online, then close and reopen it. The new version replaces the old cached one automatically. If a phone still shows old behavior, remove the app from the Home Screen and add it again.

@@ -1,4 +1,4 @@
-const CACHE='bpm-bible-v9-kjva-1769';
+const CACHE='bpm-bible-v10-kjva-1769';
 const APP=['./','./index.html','./manifest.json','./logo.png','./apple-touch-icon.png','./icon-192.png','./icon-512.png','./favicon-32.png'];
 self.addEventListener('install',e=>e.waitUntil(
   caches.open(CACHE).then(c=>Promise.all(APP.map(u=>fetch(new Request(u,{cache:'reload'})).then(r=>r.ok?c.put(u,r):null).catch(()=>null)))).then(()=>self.skipWaiting())

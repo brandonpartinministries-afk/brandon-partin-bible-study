@@ -63,11 +63,11 @@ body.light .toast{background:#172033;color:#fff}
     <div><strong>Brandon Partin Ministries</strong><small>Bible Study</small></div>
   </div>
   <nav class="navlinks" aria-label="Main navigation">
-    <button data-screen="home" class="active">Home</button>
-    <button data-screen="bible">Bible</button>
-    <button data-screen="studies">Studies</button>
-    <button data-screen="journal">Journal</button>
-    <button data-screen="settings">Settings</button>
+    <button type="button" data-screen="home" class="active">Home</button>
+    <button type="button" data-screen="bible">Bible</button>
+    <button type="button" data-screen="studies">Studies</button>
+    <button type="button" data-screen="journal">Journal</button>
+    <button type="button" data-screen="settings">Settings</button>
   </nav>
 </div>
 </header>
@@ -80,23 +80,23 @@ body.light .toast{background:#172033;color:#fff}
       <h1>Make space for Scripture.</h1>
       <p>Read the Bible, search passages, study Scripture, save prayers and notes, and keep favorite verses in one place.</p>
       <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
-        <button class="primary" data-action="today">🌅 Today's devotional</button>
-        <button class="secondary" data-action="openBible">📖 Open Bible</button>
+        <button type="button" class="primary" data-action="today">🌅 Today's devotional</button>
+        <button type="button" class="secondary" data-action="openBible">📖 Open Bible</button>
       </div>
     </div>
     <img id="heroLogo" class="heroLogo" alt="Brandon Partin Ministries">
   </div>
   <div class="grid">
-    <div class="tile"><b>📖 Bible</b><p>Read and search the full KJV Bible with Apocrypha.</p><button class="secondary" data-action="openBible">Open</button></div>
-    <div class="tile"><b>📚 Studies</b><p>Work through guided Bible study lessons.</p><button class="secondary" data-action="openStudies">Study</button></div>
-    <div class="tile"><b>🙏 Journal</b><p>Save prayers, notes and favorite verses.</p><button class="secondary" data-action="openJournal">Journal</button></div>
+    <div class="tile"><b>📖 Bible</b><p>Read and search the full KJV Bible with Apocrypha.</p><button type="button" class="secondary" data-action="openBible">Open</button></div>
+    <div class="tile"><b>📚 Studies</b><p>Work through guided Bible study lessons.</p><button type="button" class="secondary" data-action="openStudies">Study</button></div>
+    <div class="tile"><b>🙏 Journal</b><p>Save prayers, notes and favorite verses.</p><button type="button" class="secondary" data-action="openJournal">Journal</button></div>
   </div>
-  <div class="card" id="continueCard" hidden><span class="pill">▶ Continue reading</span><h2 id="continueTitle">Continue</h2><p id="continueText" class="muted"></p><button class="primary" data-action="continueReading">Continue</button></div>
+  <div class="card" id="continueCard" hidden><span class="pill">▶ Continue reading</span><h2 id="continueTitle">Continue</h2><p id="continueText" class="muted"></p><button type="button" class="primary" data-action="continueReading">Continue</button></div>
   <div class="card">
     <span class="pill">🌅 Daily devotional</span>
     <h2 id="homeDevTitle">Be Still</h2>
     <p id="homeDevText" class="muted"></p>
-    <button class="secondary" data-action="today">Read devotional</button>
+    <button type="button" class="secondary" data-action="today">Read devotional</button>
   </div>
 </section>
 
@@ -110,17 +110,24 @@ body.light .toast{background:#172033;color:#fff}
       <select id="bookSelect" aria-label="Choose Bible book"></select>
       <select id="chapterSelect" aria-label="Choose chapter"></select>
     </div>
-    <button class="primary" data-action="openChapter" style="margin-top:12px">📖 Open Chapter</button>
-    <div class="searchRow"><input id="search" placeholder="🔍 Search the entire Bible" style="margin-top:12px"><button class="secondary" data-action="clearSearch" style="margin-top:12px">Clear</button></div>
+    <button type="button" class="primary" data-action="openChapter" style="margin-top:12px">📖 Open Chapter</button>
+    <div class="searchRow"><input id="search" placeholder="🔍 Search the entire Bible" style="margin-top:12px"><button type="button" class="secondary" data-action="clearSearch" style="margin-top:12px">Clear</button></div>
     <div id="searchResults" style="margin-top:10px"></div>
   </div>
-  <div class="card readingTools"><button class="secondary" data-action="prevChapter">← Previous</button><button class="secondary" data-action="nextChapter">Next →</button><button class="secondary" data-action="fontMinus">A−</button><button class="secondary" data-action="fontPlus">A+</button></div>
+  <div class="card readingTools"><button type="button" class="secondary" data-action="prevChapter">← Previous</button><button type="button" class="secondary" data-action="nextChapter">Next →</button><button type="button" class="secondary" data-action="fontMinus">A−</button><button type="button" class="secondary" data-action="fontPlus">A+</button></div>
   <div id="chapterCard" class="card" hidden></div>
   <div id="verseCard" class="card" hidden></div>
 </section>
 
 <section id="studies" class="screen">
-  <div class="card"><span class="pill">📚 Bible study lessons</span><h1>Study Scripture</h1><p class="muted">Choose a lesson to open the study.</p></div>
+  <div class="card"><span class="pill">📚 Bible study lessons</span><h1>Study Scripture</h1><p class="muted">Choose a lesson to open the study, or add your own lesson from a JSON file saved in the Files app.</p>
+    <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
+      <button type="button" class="primary" data-action="importLesson">➕ Add study lesson</button>
+      <button type="button" class="secondary" data-action="exportLessons">📤 Export lessons</button>
+    </div>
+    <input id="lessonFile" type="file" accept=".json,.txt,.json.txt" hidden>
+    <p id="lessonStatus" class="muted"></p>
+  </div>
   <div class="grid" id="lessonGrid"></div>
   <div id="lessonCard" class="card" hidden></div>
 </section>
@@ -128,11 +135,11 @@ body.light .toast{background:#172033;color:#fff}
 <section id="journal" class="screen">
   <div class="card"><span class="pill">🙏 Prayer journal</span><h1>Prayer</h1>
     <textarea id="prayer" placeholder="Write your prayer..."></textarea><br><br>
-    <button class="primary" data-action="savePrayer">Save prayer</button> <span id="prayerStatus" class="muted"></span>
+    <button type="button" class="primary" data-action="savePrayer">Save prayer</button> <span id="prayerStatus" class="muted"></span>
   </div>
   <div class="card"><span class="pill">📝 Personal notes</span><h2>Notes</h2>
     <textarea id="notes" placeholder="Write notes from your study..."></textarea><br><br>
-    <button class="primary" data-action="saveNotes">Save notes</button> <span id="notesStatus" class="muted"></span>
+    <button type="button" class="primary" data-action="saveNotes">Save notes</button> <span id="notesStatus" class="muted"></span>
   </div>
   <div class="card"><span class="pill">❤️ Favorites</span><h2>Bookmarked verses</h2><div id="favorites"></div></div>
 </section>
@@ -142,24 +149,24 @@ body.light .toast{background:#172033;color:#fff}
     <label><input id="reminders" type="checkbox" style="width:auto;margin-right:8px"> 🔔 Enable daily reminder</label>
     <p class="muted">This saves your preference on this device. Browser notification support depends on where the app is hosted.</p>
     <div class="settingsGrid">
-      <button class="secondary" data-action="toggleTheme">🌙 Toggle dark/light</button>
-      <button class="secondary" data-action="installApp" id="installBtn" hidden>📲 Install app</button>
+      <button type="button" class="secondary" data-action="toggleTheme">🌙 Toggle dark/light</button>
+      <button type="button" class="secondary" data-action="installApp" id="installBtn" hidden>📲 Install app</button>
     </div>
-    <button class="secondary" data-action="notifyTest">Test notification</button>
-    <button class="secondary" data-action="importBible">📥 Import Bible file</button>
+    <button type="button" class="secondary" data-action="notifyTest">Test notification</button>
+    <button type="button" class="secondary" data-action="importBible">📥 Import Bible file</button>
     <input id="bibleFile" type="file" accept=".json,.txt,.json.txt" hidden>
-    <button class="danger" data-action="clearData">Clear saved data</button>
+    <button type="button" class="danger" data-action="clearData">Clear saved data</button>
   </div>
 </section>
 
 <section id="devotional" class="screen">
   <div class="card"><span class="pill">🌅 Daily devotional</span><h1 id="devTitle"></h1><p id="devText" class="quote"></p><p><b>Scripture:</b> <span id="devRef"></span></p>
-    <button class="primary" data-action="nextDevotional">Another devotional</button>
+    <button type="button" class="primary" data-action="nextDevotional">Another devotional</button>
   </div>
 </section>
 </main>
 <div id="toast" class="toast"></div>
-<footer>Brandon Partin Ministries Bible Study · No AI features</footer>
+<footer>Brandon Partin Ministries Bible Study · KJV 1769 + Apocrypha</footer>
 
 <script>
 (function(){
@@ -219,7 +226,7 @@ function openChapter(){
   if(!c){toast("That chapter is not available");return}
   localStorage.setItem("bpm_continue",JSON.stringify({book,chapter})); updateContinue();
   const card=$("chapterCard"); card.hidden=false;
-  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button class="secondary" data-bookmark="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button type="button" class="secondary" data-bookmark="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
@@ -259,10 +266,10 @@ async function loadFullBible(){
   }catch(err){
     console.error(err);
     setBibleStatus("The KJV 1769 + Apocrypha could not be loaded. Connect to the internet and tap Retry.");
-    const el=$("bibleStatus"); if(el) el.innerHTML='The KJV 1769 + Apocrypha could not be loaded. <button class="secondary" data-action="loadBible">Retry</button>';
+    const el=$("bibleStatus"); if(el) el.innerHTML='The KJV 1769 + Apocrypha could not be loaded. <button type="button" class="secondary" data-action="loadBible">Retry</button>';
   }
 }
-const lessons=[
+let lessons=[
  {title:"Trusting God",ref:"Psalm 23",text:"Explore God as shepherd, provider and guide.",qs:["What stands out in Psalm 23?","What does the passage reveal about God?","What is one way you can trust God today?"]},
  {title:"Abiding in Christ",ref:"John 15:1-5",text:"Reflect on what it means to remain connected to Christ.",qs:["What does Jesus mean by abide?","What helps you stay connected to God?","What fruit would you like to see grow?"]},
  {title:"Peace in Anxiety",ref:"Philippians 4:6-7",text:"Consider how prayer and thanksgiving shape a response to worry.",qs:["What concern can you bring to God?","What can you thank God for today?","What peaceful next step can you take?"]}
@@ -273,6 +280,47 @@ const devotionals=[
  {title:"Walk by Faith",ref:"2 Corinthians 5:7",text:"Think about one faithful step you can take today even when you cannot see the whole path."}
 ];
 let devIndex=0;
+let importedLessons=[];
+function loadLessons(){
+  try{ importedLessons=JSON.parse(localStorage.getItem("bpm_lessons")||"[]"); if(!Array.isArray(importedLessons))importedLessons=[]; }
+  catch(_){ importedLessons=[]; }
+  lessons=[...lessons.filter(l=>!l.__imported),...importedLessons.map(l=>({...l,__imported:true}))];
+}
+function saveLessons(){try{localStorage.setItem("bpm_lessons",JSON.stringify(importedLessons));}catch(_){toast("Lessons could not be saved on this device");}}
+function validLesson(x){
+  return x && typeof x==="object" && String(x.title||"").trim() && String(x.ref||"").trim() &&
+    String(x.text||"").trim() && Array.isArray(x.qs) && x.qs.length>0;
+}
+function importLessonFile(){
+  const input=$("lessonFile"); if(input) input.click();
+}
+function handleLessonFile(file){
+  if(!file)return;
+  file.text().then(raw=>{
+    const data=JSON.parse(raw);
+    const incoming=Array.isArray(data)?data:[data];
+    const good=incoming.filter(validLesson).map(x=>({
+      title:String(x.title).trim(),ref:String(x.ref).trim(),text:String(x.text).trim(),
+      qs:x.qs.map(q=>String(q).trim()).filter(Boolean)
+    }));
+    if(!good.length)throw new Error("Invalid lesson format");
+    good.forEach(item=>{
+      const i=importedLessons.findIndex(x=>x.title===item.title);
+      if(i>=0)importedLessons[i]=item; else importedLessons.push(item);
+    });
+    saveLessons();loadLessons();renderLessons();
+    const status=$("lessonStatus"); if(status)status.textContent=`${good.length} lesson${good.length===1?"":"s"} added.`;
+    toast(`${good.length} lesson${good.length===1?"":"s"} added`);
+  }).catch(err=>{console.error(err);toast("Could not import that lesson file");});
+}
+function exportLessons(){
+  if(!importedLessons.length){toast("No added lessons to export");return;}
+  const blob=new Blob([JSON.stringify(importedLessons,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url;a.download="bpm-study-lessons.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast("Lessons exported");
+}
 
 function $(id){return document.getElementById(id)}
 function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800)}
@@ -281,7 +329,7 @@ function renderDevotional(){const d=devotionals[devIndex];$("devTitle").textCont
 function openVerse(ref){
   const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref); if(!v)return;
   const card=$("verseCard"); card.hidden=false;
-  card.innerHTML='<span class="pill">📖 '+escapeHtml(v.ref)+'</span><div class="verse" style="margin-top:14px">'+escapeHtml(v.text)+'</div><br><button class="primary" data-bookmark="'+encodeURIComponent(v.ref)+'">❤️ Bookmark</button>';
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(v.ref)+'</span><div class="verse" style="margin-top:14px">'+escapeHtml(v.text)+'</div><br><button type="button" class="primary" data-bookmark="'+encodeURIComponent(v.ref)+'">❤️ Bookmark</button>';
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"center"});
 }
 function search(){
@@ -289,23 +337,57 @@ function search(){
   if(!q){box.innerHTML="";return}
   const source=bibleVerses.length?bibleVerses:verses;
   const hits=source.filter(v=>(v.ref+" "+v.text).toLowerCase().includes(q)).slice(0,80);
-  box.innerHTML=hits.length?'<p class="muted">Showing up to 80 matches.</p>'+hits.map(v=>'<div class="result"><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p><button class="secondary" data-ref="'+escapeAttr(v.ref)+'">Open</button></div>').join(""):"<p class='muted'>No match found.</p>";
+  box.innerHTML=hits.length?'<p class="muted">Showing up to 80 matches.</p>'+hits.map(v=>'<div class="result"><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p><button type="button" class="secondary" data-ref="'+escapeAttr(v.ref)+'">Open</button></div>').join(""):"<p class='muted'>No match found.</p>";
 }
 function save(key,field,status){localStorage.setItem("bpm_"+key,$(field).value);$(status).textContent="Saved.";toast("Saved")}
 function favorites(){return JSON.parse(localStorage.getItem("bpm_favorites")||"[]")}
-function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No bookmarked verses yet.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p></div><button class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
+function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No bookmarked verses yet.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p></div><button type="button" class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
 function addFavorite(ref){const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref);if(!v)return;const a=favorites();if(!a.some(x=>x.ref===ref)){a.push(v);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Verse bookmarked")}else toast("Already bookmarked")}
 function removeFavorite(i){const a=favorites();a.splice(i,1);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Removed")}
-function renderLessons(){$("lessonGrid").innerHTML=lessons.map((l,i)=>'<div class="tile"><b>'+l.title+'</b><p class="muted">'+l.ref+'</p><p>'+l.text+'</p><button class="secondary" data-lesson="'+i+'">Open lesson</button></div>').join("")}
-function openLesson(i){const l=lessons[i];$("lessonCard").hidden=false;$("lessonCard").innerHTML='<span class="pill">'+l.ref+'</span><h2>'+l.title+'</h2><p>'+l.text+'</p>'+l.qs.map((q,n)=>'<div class="result"><b>'+String(n+1).padStart(2,"0")+' · '+q+'</b></div>').join("")+'<br><button class="primary" data-action="openJournal">Write reflection</button>';showScreen("studies");$("lessonCard").scrollIntoView({behavior:"smooth",block:"center"})}
+function renderLessons(){
+  const box=$("lessonGrid"); if(!box)return;
+  box.innerHTML=lessons.map((l,i)=>'<div class="tile"><b>'+escapeHtml(l.title)+'</b><p class="muted">'+escapeHtml(l.ref)+'</p><p>'+escapeHtml(l.text)+'</p><button type="button" class="secondary" data-lesson="'+i+'">Open lesson</button></div>').join("");
+}
+function openLesson(i){
+  const l=lessons[i]; if(!l)return;
+  const card=$("lessonCard"); if(!card)return;
+  card.hidden=false;
+  card.innerHTML='<span class="pill">'+escapeHtml(l.ref)+'</span><h2>'+escapeHtml(l.title)+'</h2><p>'+escapeHtml(l.text)+'</p>'+
+    l.qs.map((q,n)=>'<div class="result"><b>'+String(n+1).padStart(2,"0")+' · '+escapeHtml(q)+'</b></div>').join("")+
+    '<br><button type="button" class="primary" data-action="openJournal">Write reflection</button>';
+  showScreen("studies");card.scrollIntoView({behavior:"smooth",block:"center"});
+}
 function nextDev(){devIndex=(devIndex+1)%devotionals.length;renderDevotional();showScreen("devotional")}
-function clearData(){if(confirm("Clear saved prayers, notes, favorites and settings?")){["bpm_prayer","bpm_notes","bpm_favorites","bpm_reminders","bpm_continue","bpm_font","bpm_theme"].concat(Object.keys(localStorage).filter(k=>k.startsWith("bpm_book_"))).forEach(k=>localStorage.removeItem(k));location.reload()}}
-function notifyTest(){if(!("Notification" in window)){toast("Notifications aren't supported here");return}if(Notification.permission==="granted")new Notification("Brandon Partin Ministries",{body:"Time for Bible study."});else Notification.requestPermission().then(p=>{if(p==="granted")new Notification("Brandon Partin Ministries",{body:"Time for Bible study."});else toast("Notification permission not granted")})}
+function clearData(){
+  if(!window.confirm("Clear saved prayers, notes, favorites, settings, imported Bible books and added study lessons?"))return;
+  try{
+    Object.keys(localStorage).filter(k=>k.startsWith("bpm_")).forEach(k=>localStorage.removeItem(k));
+  }catch(e){console.error(e);}
+  toast("Saved data cleared");
+  setTimeout(()=>location.reload(),300);
+}
+async function notifyTest(){
+  const msg="Time for Bible study.";
+  try{
+    if(!("Notification" in window)){toast("Notifications are not available in this iPhone browser.");return;}
+    let p=Notification.permission;
+    if(p==="default")p=await Notification.requestPermission();
+    if(p==="granted"){new Notification("Brandon Partin Ministries",{body:msg});toast("Test notification sent");}
+    else toast("Allow notifications for this app in iPhone Settings.");
+  }catch(e){console.error(e);toast("iPhone did not allow browser notifications here.");}
+}
 
 function updateContinue(){const x=JSON.parse(localStorage.getItem("bpm_continue")||"null");const card=$("continueCard");if(!x||!card)return;card.hidden=false;$("continueTitle").textContent=x.book+" "+x.chapter;$("continueText").textContent="Pick up where you left off.";}
-function continueReading(){const x=JSON.parse(localStorage.getItem("bpm_continue")||"null");if(!x)return;showScreen("bible");if($("bookSelect")){$("bookSelect").value=x.book;populateChapters();$("chapterSelect").value=String(x.chapter);openChapter();}}
+function continueReading(){
+  let x=null;try{x=JSON.parse(localStorage.getItem("bpm_continue")||"null")}catch(_){}
+  if(!x){toast("There is no saved reading position yet.");return;}
+  showScreen("bible");
+  const bs=$("bookSelect"),cs=$("chapterSelect");
+  if(!bs||!cs||!bibleBookData[x.book]){toast("Finish loading the Bible, then try Continue again.");return;}
+  bs.value=x.book;populateChapters();cs.value=String(x.chapter);openChapter();
+}
 function chapterMove(delta){
-  const books=fullBible.books; if(!books.length)return;
+  const books=fullBible.books; if(!books.length){toast("The Bible is still loading.");return;}
   const cnt=n=>{const b=bibleBookData[books[n].book];return Number(b?.["chapter-count"]||b?.chapters?.length||1)};
   let bi=books.findIndex(x=>x.book===$("bookSelect").value); if(bi<0)bi=0;
   let ci=Number($("chapterSelect").value||1)+delta;
@@ -313,12 +395,17 @@ function chapterMove(delta){
   else if(ci>cnt(bi)){if(bi===books.length-1){toast("This is the last chapter");return}bi++;ci=1;}
   $("bookSelect").value=books[bi].book;populateChapters();$("chapterSelect").value=String(ci);openChapter();
 }
-function setFont(delta){let n=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--verse-size"))||1.08;n=Math.max(.9,Math.min(1.5,n+delta));document.documentElement.style.setProperty("--verse-size",n+"rem");localStorage.setItem("bpm_font",n);}
-function toggleTheme(){document.body.classList.toggle("light");localStorage.setItem("bpm_theme",document.body.classList.contains("light")?"light":"dark");}
+function setFont(delta){let n=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--verse-size"))||1.08;n=Math.max(.9,Math.min(1.5,n+delta));document.documentElement.style.setProperty("--verse-size",n+"rem");try{localStorage.setItem("bpm_font",n)}catch(_){ }toast(delta<0?"Text smaller":"Text larger");}
+function toggleTheme(){const light=document.body.classList.toggle("light");try{localStorage.setItem("bpm_theme",light?"light":"dark")}catch(_){ }toast(light?"Light mode on":"Dark mode on");}
 let deferredInstall=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;const b=$("installBtn");if(b)b.hidden=false;});
 async function installApp(){if(!deferredInstall){toast("On iPhone, use Share → Add to Home Screen.");return;}deferredInstall.prompt();deferredInstall=null;}
 function clearSearch(){$("search").value="";$('searchResults').innerHTML="";}
-document.addEventListener("click",function(e){
+let lastActionAt=0;
+function handleTap(e){
+ const now=Date.now();
+ if(e.type==="touchend" && now-lastActionAt<500)return;
+ if(e.type==="touchend")lastActionAt=now;
+
  const nav=e.target.closest("[data-screen]");if(nav){showScreen(nav.dataset.screen);return}
  const ref=e.target.closest("[data-ref]");if(ref){openVerse(ref.dataset.ref);return}
  const bm=e.target.closest("[data-bookmark]");if(bm){addFavorite(decodeURIComponent(bm.dataset.bookmark));return}
@@ -345,10 +432,14 @@ document.addEventListener("click",function(e){
   case"toggleTheme":toggleTheme();break;
   case"installApp":installApp();break;
   case"clearSearch":clearSearch();break;
-  case"importBible":$("bibleFile").click();break;
+  case"importBible":$("bibleFile")?.click();break;
+  case"importLesson":importLessonFile();break;
+  case"exportLessons":exportLessons();break;
  }
-});
-$("search").addEventListener("input",search);
+}
+document.addEventListener("click",handleTap);
+document.addEventListener("touchend",handleTap,{passive:true});
+$("search")?.addEventListener("input",search);
 populateBibleSelectors();
 loadFullBible();
 $("prayer").value=localStorage.getItem("bpm_prayer")||"";
@@ -356,12 +447,13 @@ $("notes").value=localStorage.getItem("bpm_notes")||"";
 $("reminders").checked=localStorage.getItem("bpm_reminders")==="1";
 $("reminders").addEventListener("change",e=>{localStorage.setItem("bpm_reminders",e.target.checked?"1":"0");toast(e.target.checked?"Reminder enabled":"Reminder disabled")});
 $("brandLogo").src=LOGO_URI;$("heroLogo").src=LOGO_URI;
-renderLessons();renderFavorites();renderDevotional();
-$("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());const book=addImportedBook(data);try{localStorage.setItem("bpm_book_"+book,JSON.stringify(data));}catch(_){toast("Imported, but too large to keep for next time");}const sel=$("bookSelect").value;populateBibleSelectors();if(sel)$("bookSelect").value=sel;populateChapters();toast(book+" imported");}catch(err){toast("Could not import that Bible file");}e.target.value="";});
+loadLessons();renderLessons();renderFavorites();renderDevotional();
+$("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());const book=addImportedBook(data);try{localStorage.setItem("bpm_book_"+book,JSON.stringify(data));}catch(_){toast("Imported, but too large to keep for next time");}const sel=$("bookSelect").value;populateBibleSelectors();if(sel)$("bookSelect").value=sel;populateChapters();toast(book+" imported");}catch(err){console.error(err);toast("Could not import that Bible file");}e.target.value="";});
+$("lessonFile")?.addEventListener("change",e=>{handleLessonFile(e.target.files?.[0]);e.target.value="";});
 if(localStorage.getItem("bpm_theme")==="light")document.body.classList.add("light");
 if(localStorage.getItem("bpm_font"))document.documentElement.style.setProperty("--verse-size",localStorage.getItem("bpm_font")+"rem");
 updateContinue();
-if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});navigator.serviceWorker.register("sw.js").then(r=>r.update&&r.update()).catch(()=>{});}
+if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});navigator.serviceWorker.register("sw.js?v=10").then(r=>r.update&&r.update()).catch(()=>{});}
 
 })();
 </script>

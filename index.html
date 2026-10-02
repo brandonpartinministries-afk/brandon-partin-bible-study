@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="apple-touch-icon-precomposed" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<link rel="icon" type="image/png" sizes="32x32" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BPM Bible Study">
@@ -40,7 +40,17 @@ body{transition:background .2s,color .2s}.card,.tile{box-shadow:var(--shadow)}
 .searchRow{display:grid;grid-template-columns:1fr auto;gap:8px}.readingTools{display:flex;gap:8px;flex-wrap:wrap}.readingTools button{flex:1;min-width:90px}
 .settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.verseRow{line-height:1.8;padding:12px 0;border-bottom:1px solid var(--line);font-size:var(--verse-size,1.08rem)}.verseNum{display:inline-flex;min-width:30px;color:var(--accent);font-weight:800}.result{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}.tile{transition:transform .15s, border-color .15s}.tile:active{transform:scale(.98)}
 body.light{--bg:#f4f7fb;--panel:#fff;--panel2:#edf3fa;--text:#172033;--muted:#536078;--line:#d6deea;--blue:#1264c8;--silver:#24364d;--good:#167044;background:var(--bg);color:var(--text)}
-body.light .topbar{background:rgba(244,247,251,.86)}
+body.light{background:var(--bg)}
+body.light .top{background:rgba(244,247,251,.94)}
+body.light .navlinks button,body.light .iconbtn{background:#fff;color:var(--text)}
+body.light .navlinks button.active,body.light .primary{background:linear-gradient(135deg,#3d78bd,#1d4e88);color:#fff}
+body.light .card{background:#fff}
+body.light .tile,body.light .secondary{background:var(--panel2);color:var(--text)}
+body.light .danger{background:#fde8ea;border-color:#e3a8af;color:#7a1d28}
+body.light input,body.light textarea,body.light select{background:#fff;color:var(--text)}
+body.light .verse{color:#2a2418}body.light .verse sup{color:var(--blue)}
+body.light .pill{color:var(--blue)}body.light .eyebrow{color:var(--blue)}
+body.light .toast{background:#172033;color:#fff}
 @media(max-width:600px){.settingsGrid{grid-template-columns:1fr}.topbar{padding:12px}.hero h1{font-size:1.8rem}}
 </style>
 
@@ -77,7 +87,7 @@ body.light .topbar{background:rgba(244,247,251,.86)}
     <img id="heroLogo" class="heroLogo" alt="Brandon Partin Ministries">
   </div>
   <div class="grid">
-    <div class="tile"><b>📖 Bible</b><p>Browse and search a starter Scripture library.</p><button class="secondary" data-action="openBible">Open</button></div>
+    <div class="tile"><b>📖 Bible</b><p>Read and search the full KJV Bible with Apocrypha.</p><button class="secondary" data-action="openBible">Open</button></div>
     <div class="tile"><b>📚 Studies</b><p>Work through guided Bible study lessons.</p><button class="secondary" data-action="openStudies">Study</button></div>
     <div class="tile"><b>🙏 Journal</b><p>Save prayers, notes and favorite verses.</p><button class="secondary" data-action="openJournal">Journal</button></div>
   </div>
@@ -173,7 +183,7 @@ function cleanBibleText(text){return String(text||"").replace(/<[^>]*>/g,"").rep
 function normalizeApiBook(raw){
   const name=raw.book||raw.book_name||raw.name||raw.title;
   if(!name)return null;
-  const aliases={"Psalm":"Psalms","Psalms":"Psalms","Song of Songs":"Song of Solomon","Song of Solomon":"Song of Solomon","Prayer of Manasseh":"Prayer of Manasses","Prayer of Manasses":"Prayer of Manasses","3 Maccabees":"3 Holy Children's Song"};
+  const aliases={"Psalm":"Psalms","Psalms":"Psalms","Song of Songs":"Song of Solomon","Song of Solomon":"Song of Solomon","Prayer of Manasseh":"Prayer of Manasses","Prayer of Manasses":"Prayer of Manasses"};
   const bookName=aliases[name]||name;
   let sourceChapters=raw.chapters||raw.Chapters;
   if(sourceChapters&&typeof sourceChapters==="object"&&!Array.isArray(sourceChapters))sourceChapters=Object.values(sourceChapters);
@@ -209,15 +219,27 @@ function openChapter(){
   if(!c){toast("That chapter is not available");return}
   localStorage.setItem("bpm_continue",JSON.stringify({book,chapter})); updateContinue();
   const card=$("chapterCard"); card.hidden=false;
-  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button class="secondary" data-ref="'+escapeAttr(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button class="secondary" data-bookmark="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function escapeAttr(x){return escapeHtml(x)}
+function addImportedBook(data){
+  const book=data.book||data.title; if(!book)throw new Error("No book name");
+  for(let i=bibleVerses.length-1;i>=0;i--)if(bibleVerses[i].book===book)bibleVerses.splice(i,1);
+  bibleBookData[book]=data;
+  if(!fullBible.books.some(x=>x.book===book))fullBible.books.push({book});
+  bibleVerses.push(...normalizeBook(data));
+  return book;
+}
+function loadImportedBooks(){
+  Object.keys(localStorage).filter(k=>k.startsWith("bpm_book_")).forEach(k=>{try{addImportedBook(JSON.parse(localStorage.getItem(k)))}catch(_){}});
+}
 function normalizeBook(book){return (book.chapters||[]).flatMap(ch=>(ch.verses||[]).map(v=>({ref:book.book+" "+ch.chapter+":"+v.verse,text:v.text,book:book.book,chapter:Number(ch.chapter),verse:Number(v.verse)})))}
 async function loadFullBible(){
   try{
     setBibleStatus("Loading KJV 1769 + Apocrypha…",true);
+    bibleVerses.length=0; fullBible.books=[]; Object.keys(bibleBookData).forEach(k=>delete bibleBookData[k]);
     let api=null;
     try{api=await loadJson(KJVA_API);}
     catch(e){
@@ -231,6 +253,7 @@ async function loadFullBible(){
     const extras=books.filter(b=>!ordered.includes(b));
     fullBible.books=ordered.concat(extras).map(b=>({book:b.book}));
     fullBible.books.forEach(({book})=>{bibleBookData[book]=byName[book];bibleVerses.push(...normalizeBook(byName[book]));});
+    loadImportedBooks();
     populateBibleSelectors();
     setBibleStatus("KJV 1769 + Apocrypha ready — "+bibleVerses.length.toLocaleString()+" verses across "+fullBible.books.length+" books.");
   }catch(err){
@@ -270,18 +293,26 @@ function search(){
 }
 function save(key,field,status){localStorage.setItem("bpm_"+key,$(field).value);$(status).textContent="Saved.";toast("Saved")}
 function favorites(){return JSON.parse(localStorage.getItem("bpm_favorites")||"[]")}
-function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No bookmarked verses yet.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+v.ref+'</b><p class="muted">'+v.text+'</p></div><button class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
+function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No bookmarked verses yet.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p></div><button class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
 function addFavorite(ref){const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref);if(!v)return;const a=favorites();if(!a.some(x=>x.ref===ref)){a.push(v);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Verse bookmarked")}else toast("Already bookmarked")}
 function removeFavorite(i){const a=favorites();a.splice(i,1);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Removed")}
 function renderLessons(){$("lessonGrid").innerHTML=lessons.map((l,i)=>'<div class="tile"><b>'+l.title+'</b><p class="muted">'+l.ref+'</p><p>'+l.text+'</p><button class="secondary" data-lesson="'+i+'">Open lesson</button></div>').join("")}
 function openLesson(i){const l=lessons[i];$("lessonCard").hidden=false;$("lessonCard").innerHTML='<span class="pill">'+l.ref+'</span><h2>'+l.title+'</h2><p>'+l.text+'</p>'+l.qs.map((q,n)=>'<div class="result"><b>'+String(n+1).padStart(2,"0")+' · '+q+'</b></div>').join("")+'<br><button class="primary" data-action="openJournal">Write reflection</button>';showScreen("studies");$("lessonCard").scrollIntoView({behavior:"smooth",block:"center"})}
 function nextDev(){devIndex=(devIndex+1)%devotionals.length;renderDevotional();showScreen("devotional")}
-function clearData(){if(confirm("Clear saved prayers, notes, favorites and settings?")){["bpm_prayer","bpm_notes","bpm_favorites","bpm_reminders"].forEach(k=>localStorage.removeItem(k));location.reload()}}
+function clearData(){if(confirm("Clear saved prayers, notes, favorites and settings?")){["bpm_prayer","bpm_notes","bpm_favorites","bpm_reminders","bpm_continue","bpm_font","bpm_theme"].concat(Object.keys(localStorage).filter(k=>k.startsWith("bpm_book_"))).forEach(k=>localStorage.removeItem(k));location.reload()}}
 function notifyTest(){if(!("Notification" in window)){toast("Notifications aren't supported here");return}if(Notification.permission==="granted")new Notification("Brandon Partin Ministries",{body:"Time for Bible study."});else Notification.requestPermission().then(p=>{if(p==="granted")new Notification("Brandon Partin Ministries",{body:"Time for Bible study."});else toast("Notification permission not granted")})}
 
 function updateContinue(){const x=JSON.parse(localStorage.getItem("bpm_continue")||"null");const card=$("continueCard");if(!x||!card)return;card.hidden=false;$("continueTitle").textContent=x.book+" "+x.chapter;$("continueText").textContent="Pick up where you left off.";}
 function continueReading(){const x=JSON.parse(localStorage.getItem("bpm_continue")||"null");if(!x)return;showScreen("bible");if($("bookSelect")){$("bookSelect").value=x.book;populateChapters();$("chapterSelect").value=String(x.chapter);openChapter();}}
-function chapterMove(delta){const b=$("bookSelect").value;const idx=fullBible.books.findIndex(x=>x.book===b);let ci=Number($("chapterSelect").value||1)+delta;let bi=idx;if(ci<1){bi=Math.max(0,idx-1);ci=Number(bibleBookData[fullBible.books[bi]?.book]?.["chapter-count"]||1);}else{const count=Number(bibleBookData[b]?.["chapter-count"]||0);if(count&&ci>count){bi=Math.min(fullBible.books.length-1,idx+1);ci=1;}}if(fullBible.books[bi]){$("bookSelect").value=fullBible.books[bi].book;populateChapters();$("chapterSelect").value=String(ci);openChapter();}}
+function chapterMove(delta){
+  const books=fullBible.books; if(!books.length)return;
+  const cnt=n=>{const b=bibleBookData[books[n].book];return Number(b?.["chapter-count"]||b?.chapters?.length||1)};
+  let bi=books.findIndex(x=>x.book===$("bookSelect").value); if(bi<0)bi=0;
+  let ci=Number($("chapterSelect").value||1)+delta;
+  if(ci<1){if(bi===0){toast("This is the first chapter");return}bi--;ci=cnt(bi);}
+  else if(ci>cnt(bi)){if(bi===books.length-1){toast("This is the last chapter");return}bi++;ci=1;}
+  $("bookSelect").value=books[bi].book;populateChapters();$("chapterSelect").value=String(ci);openChapter();
+}
 function setFont(delta){let n=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--verse-size"))||1.08;n=Math.max(.9,Math.min(1.5,n+delta));document.documentElement.style.setProperty("--verse-size",n+"rem");localStorage.setItem("bpm_font",n);}
 function toggleTheme(){document.body.classList.toggle("light");localStorage.setItem("bpm_theme",document.body.classList.contains("light")?"light":"dark");}
 let deferredInstall=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredInstall=e;const b=$("installBtn");if(b)b.hidden=false;});
@@ -306,6 +337,15 @@ document.addEventListener("click",function(e){
   case"notifyTest":notifyTest();break;
   case"openChapter":openChapter();break;
   case"loadBible":loadFullBible();break;
+  case"continueReading":continueReading();break;
+  case"prevChapter":chapterMove(-1);break;
+  case"nextChapter":chapterMove(1);break;
+  case"fontMinus":setFont(-.08);break;
+  case"fontPlus":setFont(.08);break;
+  case"toggleTheme":toggleTheme();break;
+  case"installApp":installApp();break;
+  case"clearSearch":clearSearch();break;
+  case"importBible":$("bibleFile").click();break;
  }
 });
 $("search").addEventListener("input",search);
@@ -317,7 +357,7 @@ $("reminders").checked=localStorage.getItem("bpm_reminders")==="1";
 $("reminders").addEventListener("change",e=>{localStorage.setItem("bpm_reminders",e.target.checked?"1":"0");toast(e.target.checked?"Reminder enabled":"Reminder disabled")});
 $("brandLogo").src=LOGO_URI;$("heroLogo").src=LOGO_URI;
 renderLessons();renderFavorites();renderDevotional();
-$("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const text=await f.text();const data=JSON.parse(text);const book=data.book||data.title;if(!book)throw new Error("No book name");localStorage.setItem("bpm_book_"+book,JSON.stringify(data));bibleBookData[book]=data;if(!fullBible.books.some(x=>x.book===book))fullBible.books.push({book});bibleVerses.push(...normalizeBook(data));populateBibleSelectors();toast(book+" imported");}catch(err){toast("Could not import that Bible file");}});
+$("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());const book=addImportedBook(data);try{localStorage.setItem("bpm_book_"+book,JSON.stringify(data));}catch(_){toast("Imported, but too large to keep for next time");}const sel=$("bookSelect").value;populateBibleSelectors();if(sel)$("bookSelect").value=sel;populateChapters();toast(book+" imported");}catch(err){toast("Could not import that Bible file");}e.target.value="";});
 if(localStorage.getItem("bpm_theme")==="light")document.body.classList.add("light");
 if(localStorage.getItem("bpm_font"))document.documentElement.style.setProperty("--verse-size",localStorage.getItem("bpm_font")+"rem");
 updateContinue();

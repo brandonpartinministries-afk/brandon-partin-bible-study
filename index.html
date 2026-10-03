@@ -54,6 +54,8 @@ body.light .toast{background:#172033;color:#fff}
 @media(max-width:600px){.settingsGrid{grid-template-columns:1fr}.topbar{padding:12px}.hero h1{font-size:1.8rem}}
 </style>
 
+<script src="./supabase-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <header class="top">
@@ -68,6 +70,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="studies">Studies</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
+    <button type="button" data-screen="admin" id="adminNav" hidden>Admin</button>
   </nav>
 </div>
 </header>
@@ -120,14 +123,7 @@ body.light .toast{background:#172033;color:#fff}
 </section>
 
 <section id="studies" class="screen">
-  <div class="card"><span class="pill">📚 Bible study lessons</span><h1>Study Scripture</h1><p class="muted">Choose a lesson to open the study, or add your own lesson from a JSON file saved in the Files app.</p>
-    <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
-      <button type="button" class="primary" data-action="importLesson">➕ Add study lesson</button>
-      <button type="button" class="secondary" data-action="exportLessons">📤 Export lessons</button>
-    </div>
-    <input id="lessonFile" type="file" accept=".json,.txt,.json.txt" hidden>
-    <p id="lessonStatus" class="muted"></p>
-  </div>
+  <div class="card"><span class="pill">📚 Bible study lessons</span><h1>Study Scripture</h1><p class="muted">Choose a published Bible study lesson. New lessons are published by the ministry administrator.</p><p id="lessonStatus" class="muted"></p></div>
   <div class="grid" id="lessonGrid"></div>
   <div id="lessonCard" class="card" hidden></div>
 </section>
@@ -142,6 +138,24 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" class="primary" data-action="saveNotes">Save notes</button> <span id="notesStatus" class="muted"></span>
   </div>
   <div class="card"><span class="pill">❤️ Favorites</span><h2>Bookmarked verses</h2><div id="favorites"></div></div>
+</section>
+
+<section id="admin" class="screen">
+  <div class="card"><span class="pill">🔐 Administration</span><h1>Content Administration</h1><p id="adminStatus" class="muted">Sign in with an administrator account to manage published content.</p>
+    <div id="adminLogin" class="stack">
+      <input id="adminEmail" type="email" autocomplete="username" placeholder="Administrator email">
+      <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Password">
+      <button type="button" class="primary" data-action="adminLogin">🔐 Sign in</button>
+    </div>
+    <div id="adminPanel" hidden>
+      <div class="grid2">
+        <div class="tile"><b>📖 Bible Study Lessons</b><p class="muted">Upload one lesson or a JSON collection. Imported lessons are published to the cloud database.</p><input id="adminLessonFile" type="file" accept=".json,.txt,.json.txt"><button type="button" class="primary" data-action="adminImportLesson" style="margin-top:10px">Publish lesson(s)</button></div>
+        <div class="tile"><b>🌅 Devotionals</b><p class="muted">Upload one devotional or a devotional series and publish it for users.</p><input id="adminDevotionalFile" type="file" accept=".json,.txt,.json.txt"><button type="button" class="primary" data-action="adminImportDevotional" style="margin-top:10px">Publish devotional(s)</button></div>
+      </div>
+      <div class="card"><h2>Published content</h2><div id="adminContentList" class="stack"></div></div>
+      <button type="button" class="secondary" data-action="adminLogout">Sign out</button>
+    </div>
+  </div>
 </section>
 
 <section id="settings" class="screen">
@@ -163,6 +177,8 @@ body.light .toast{background:#172033;color:#fff}
   <div class="card"><span class="pill">🌅 Daily devotional</span><h1 id="devTitle"></h1><p id="devText" class="quote"></p><p><b>Scripture:</b> <span id="devRef"></span></p>
     <button type="button" class="primary" data-action="nextDevotional">Another devotional</button>
   </div>
+  <div class="card"><span class="pill">📖 Published devotionals</span><h2>Devotional library</h2><p class="muted">Devotionals are published by the ministry administrator and shared with app users.</p><p id="devotionalStatus" class="muted"></p></div>
+  <div class="grid" id="devotionalGrid"></div>
 </section>
 </main>
 <div id="toast" class="toast"></div>
@@ -269,6 +285,39 @@ async function loadFullBible(){
     const el=$("bibleStatus"); if(el) el.innerHTML='The KJV 1769 + Apocrypha could not be loaded. <button type="button" class="secondary" data-action="loadBible">Retry</button>';
   }
 }
+const SUPABASE_URL = window.BPM_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = window.BPM_SUPABASE_ANON_KEY || "";
+const supabaseClient = (window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let isAdmin=false;
+function cloudReady(){return !!supabaseClient;}
+async function checkAdmin(){
+  if(!supabaseClient){isAdmin=false;updateAdminUI();return false;}
+  const {data:{user}}=await supabaseClient.auth.getUser();
+  if(!user){isAdmin=false;updateAdminUI();return false;}
+  const {data,error}=await supabaseClient.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
+  isAdmin=!!data&&!error; updateAdminUI(); return isAdmin;
+}
+function updateAdminUI(){const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=!isAdmin;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
+async function adminLogin(){
+ if(!supabaseClient){toast("Supabase is not configured yet");return;}
+ const email=$("adminEmail").value.trim(),password=$("adminPassword").value;
+ const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+ if(error){toast(error.message);return;}
+ if(await checkAdmin()){showScreen("admin");await loadCloudContent();toast("Administrator signed in");}else{await supabaseClient.auth.signOut();toast("This account is not an administrator");}
+}
+async function adminLogout(){if(supabaseClient)await supabaseClient.auth.signOut();isAdmin=false;updateAdminUI();showScreen("home");toast("Signed out");}
+async function loadCloudContent(){
+ if(!supabaseClient)return;
+ const [{data:ls},{data:ds}]=await Promise.all([supabaseClient.from("study_lessons").select("id,title,ref,text,qs,published,created_at").eq("published",true).order("created_at",{ascending:false}),supabaseClient.from("devotionals").select("id,title,ref,text,prayer,series,published,created_at").eq("published",true).order("created_at",{ascending:false})]);
+ if(Array.isArray(ls)&&ls.length){lessons=[...lessons.filter(l=>!l.__cloud),...ls.map(l=>({...l,__cloud:true}))];renderLessons();}
+ if(Array.isArray(ds)&&ds.length){allDevotionals=[...devotionals,...ds.map(d=>({...d,__cloud:true}))];renderDevotionals();renderDevotional();}
+ if(isAdmin)renderAdminContent(ls||[],ds||[]);
+}
+function renderAdminContent(ls,ds){const box=$("adminContentList");if(!box)return;box.innerHTML=(ls.length?'<b>Studies</b>'+ls.map(x=>`<div class="result"><b>${escapeHtml(x.title)}</b><p class="muted">${escapeHtml(x.ref)}</p><button type="button" class="danger" data-admin-delete-study="${x.id}">Delete</button></div>`).join(""):"")+(ds.length?'<b>Devotionals</b>'+ds.map(x=>`<div class="result"><b>${escapeHtml(x.title)}</b><p class="muted">${escapeHtml(x.series||x.ref)}</p><button type="button" class="danger" data-admin-delete-dev="${x.id}">Delete</button></div>`).join(""):"")||'<p class="muted">No cloud content has been published yet.</p>'; }
+async function publishLessons(file){if(!isAdmin||!file)return;try{const data=JSON.parse(await file.text()),incoming=Array.isArray(data)?data:(Array.isArray(data.lessons)?data.lessons:[data]);const good=incoming.filter(validLesson).map(x=>({title:String(x.title).trim(),ref:String(x.ref).trim(),text:String(x.text).trim(),qs:x.qs.map(q=>String(q).trim()).filter(Boolean),published:true}));if(!good.length)throw Error("No valid lessons");const {error}=await supabaseClient.from("study_lessons").insert(good);if(error)throw error;toast(`${good.length} lesson${good.length===1?'':'s'} published`);await loadCloudContent();}catch(e){console.error(e);toast("Could not publish lesson file: "+(e.message||"Invalid JSON"));}}
+async function publishDevotionals(file){if(!isAdmin||!file)return;try{const data=JSON.parse(await file.text()),incoming=Array.isArray(data)?data:(Array.isArray(data.devotionals)?data.devotionals:[data]);const good=incoming.filter(validDevotional).map(x=>({title:String(x.title).trim(),ref:String(x.ref).trim(),text:String(x.text).trim(),prayer:x.prayer?String(x.prayer).trim():"",series:x.series?String(x.series).trim():"",published:true}));if(!good.length)throw Error("No valid devotionals");const {error}=await supabaseClient.from("devotionals").insert(good);if(error)throw error;toast(`${good.length} devotional${good.length===1?'':'s'} published`);await loadCloudContent();}catch(e){console.error(e);toast("Could not publish devotional file: "+(e.message||"Invalid JSON"));}}
+async function deleteCloud(table,id){if(!isAdmin)return;const {error}=await supabaseClient.from(table).delete().eq("id",id);if(error){toast(error.message);return;}toast("Content deleted");await loadCloudContent();}
+
 let lessons=[
  {title:"Trusting God",ref:"Psalm 23",text:"Explore God as shepherd, provider and guide.",qs:["What stands out in Psalm 23?","What does the passage reveal about God?","What is one way you can trust God today?"]},
  {title:"Abiding in Christ",ref:"John 15:1-5",text:"Reflect on what it means to remain connected to Christ.",qs:["What does Jesus mean by abide?","What helps you stay connected to God?","What fruit would you like to see grow?"]},
@@ -279,13 +328,25 @@ const devotionals=[
  {title:"A Grateful Heart",ref:"1 Thessalonians 5:18",text:"Name three gifts from God today. Spend a moment giving thanks for each one."},
  {title:"Walk by Faith",ref:"2 Corinthians 5:7",text:"Think about one faithful step you can take today even when you cannot see the whole path."}
 ];
+let importedDevotionals=[];
+let allDevotionals=[...devotionals];
 let devIndex=0;
+function loadDevotionals(){ importedDevotionals=[]; allDevotionals=[...devotionals]; }
+function saveDevotionals(){try{localStorage.setItem("bpm_devotionals",JSON.stringify(importedDevotionals));}catch(_){toast("Devotionals could not be saved on this device");}}
+function validDevotional(x){return x&&typeof x==="object"&&String(x.title||"").trim()&&String(x.ref||"").trim()&&String(x.text||"").trim();}
+function importDevotionalFile(){const input=$("devotionalFile");if(input)input.click();}
+function handleDevotionalFile(file){if(!file)return;file.text().then(raw=>{
+ const data=JSON.parse(raw), incoming=Array.isArray(data)?data:(Array.isArray(data.devotionals)?data.devotionals:[data]);
+ const good=incoming.filter(validDevotional).map(x=>({title:String(x.title).trim(),ref:String(x.ref).trim(),text:String(x.text).trim(),prayer:x.prayer?String(x.prayer).trim():"",series:x.series?String(x.series).trim():""}));
+ if(!good.length)throw new Error("Invalid devotional format");
+ good.forEach(item=>{const i=importedDevotionals.findIndex(x=>x.title===item.title&&x.ref===item.ref);if(i>=0)importedDevotionals[i]=item;else importedDevotionals.push(item);});
+ saveDevotionals();loadDevotionals();renderDevotionals();
+ const status=$("devotionalStatus");if(status)status.textContent=`${good.length} devotional${good.length===1?"":"s"} added.`;toast(`${good.length} devotional${good.length===1?"":"s"} added`);
+}).catch(err=>{console.error(err);toast("Could not import that devotional file. Check the JSON format.");});}
+function exportDevotionals(){if(!importedDevotionals.length){toast("No added devotionals to export");return;}const blob=new Blob([JSON.stringify(importedDevotionals,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="bpm-devotionals.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast("Devotionals exported");}
+
 let importedLessons=[];
-function loadLessons(){
-  try{ importedLessons=JSON.parse(localStorage.getItem("bpm_lessons")||"[]"); if(!Array.isArray(importedLessons))importedLessons=[]; }
-  catch(_){ importedLessons=[]; }
-  lessons=[...lessons.filter(l=>!l.__imported),...importedLessons.map(l=>({...l,__imported:true}))];
-}
+function loadLessons(){ importedLessons=[]; lessons=lessons.filter(l=>!l.__imported&&!l.__cloud); }
 function saveLessons(){try{localStorage.setItem("bpm_lessons",JSON.stringify(importedLessons));}catch(_){toast("Lessons could not be saved on this device");}}
 function validLesson(x){
   return x && typeof x==="object" && String(x.title||"").trim() && String(x.ref||"").trim() &&
@@ -325,7 +386,8 @@ function exportLessons(){
 function $(id){return document.getElementById(id)}
 function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800)}
 function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id));window.scrollTo({top:0,behavior:"smooth"})}
-function renderDevotional(){const d=devotionals[devIndex];$("devTitle").textContent=d.title;$("devText").textContent=d.text;$("devRef").textContent=d.ref;$("homeDevTitle").textContent=d.title;$("homeDevText").textContent=d.text}
+function renderDevotional(){const d=allDevotionals[devIndex%allDevotionals.length];$("devTitle").textContent=d.title;$("devText").textContent=d.text;$("devRef").textContent=d.ref;$("homeDevTitle").textContent=d.title;$("homeDevText").textContent=d.text}
+function renderDevotionals(){const box=$("devotionalGrid");if(!box)return;const custom=importedDevotionals;if(!custom.length){box.innerHTML='<p class="muted">No custom devotionals yet.</p>';return;}box.innerHTML=custom.map((d,i)=>'<div class="tile"><b>'+escapeHtml(d.title)+'</b><p class="muted">'+escapeHtml(d.series||d.ref)+'</p><p>'+escapeHtml(d.text)+'</p><button type="button" class="secondary" data-devotional="'+i+'">Open devotional</button></div>').join("");}
 function openVerse(ref){
   const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref); if(!v)return;
   const card=$("verseCard"); card.hidden=false;
@@ -357,9 +419,9 @@ function openLesson(i){
     '<br><button type="button" class="primary" data-action="openJournal">Write reflection</button>';
   showScreen("studies");card.scrollIntoView({behavior:"smooth",block:"center"});
 }
-function nextDev(){devIndex=(devIndex+1)%devotionals.length;renderDevotional();showScreen("devotional")}
+function nextDev(){devIndex=(devIndex+1)%allDevotionals.length;renderDevotional();showScreen("devotional")}
 function clearData(){
-  if(!window.confirm("Clear saved prayers, notes, favorites, settings, imported Bible books and added study lessons?"))return;
+  if(!window.confirm("Clear saved prayers, notes, favorites, settings, imported Bible books, added study lessons and added devotionals?"))return;
   try{
     Object.keys(localStorage).filter(k=>k.startsWith("bpm_")).forEach(k=>localStorage.removeItem(k));
   }catch(e){console.error(e);}
@@ -411,6 +473,9 @@ function handleTap(e){
  const bm=e.target.closest("[data-bookmark]");if(bm){addFavorite(decodeURIComponent(bm.dataset.bookmark));return}
  const rem=e.target.closest("[data-remove]");if(rem){removeFavorite(Number(rem.dataset.remove));return}
  const lesson=e.target.closest("[data-lesson]");if(lesson){openLesson(Number(lesson.dataset.lesson));return}
+ const customDev=e.target.closest("[data-devotional]");if(customDev){const d=importedDevotionals[Number(customDev.dataset.devotional)];if(d){devIndex=allDevotionals.findIndex(x=>x.__imported&&x.title===d.title&&x.ref===d.ref);renderDevotional();showScreen("devotional");}return}
+ const delStudy=e.target.closest("[data-admin-delete-study]");if(delStudy){deleteCloud("study_lessons",delStudy.dataset.adminDeleteStudy);return;}
+ const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const action=e.target.closest("[data-action]");if(!action)return;
  switch(action.dataset.action){
   case"today":showScreen("devotional");break;
@@ -434,7 +499,13 @@ function handleTap(e){
   case"clearSearch":clearSearch();break;
   case"importBible":$("bibleFile")?.click();break;
   case"importLesson":importLessonFile();break;
+  case"importDevotional":importDevotionalFile();break;
+  case"exportDevotionals":exportDevotionals();break;
   case"exportLessons":exportLessons();break;
+  case"adminLogin":adminLogin();break;
+  case"adminLogout":adminLogout();break;
+  case"adminImportLesson":publishLessons($("adminLessonFile").files?.[0]);break;
+  case"adminImportDevotional":publishDevotionals($("adminDevotionalFile").files?.[0]);break;
  }
 }
 document.addEventListener("click",handleTap);
@@ -447,13 +518,16 @@ $("notes").value=localStorage.getItem("bpm_notes")||"";
 $("reminders").checked=localStorage.getItem("bpm_reminders")==="1";
 $("reminders").addEventListener("change",e=>{localStorage.setItem("bpm_reminders",e.target.checked?"1":"0");toast(e.target.checked?"Reminder enabled":"Reminder disabled")});
 $("brandLogo").src=LOGO_URI;$("heroLogo").src=LOGO_URI;
-loadLessons();renderLessons();renderFavorites();renderDevotional();
+loadLessons();renderLessons();loadDevotionals();renderDevotionals();renderFavorites();renderDevotional();
+updateAdminUI();
+if(supabaseClient){supabaseClient.auth.onAuthStateChange(()=>setTimeout(async()=>{await checkAdmin();if(isAdmin)await loadCloudContent();else await loadCloudContent();},0));checkAdmin().then(loadCloudContent).catch(()=>{});}
 $("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());const book=addImportedBook(data);try{localStorage.setItem("bpm_book_"+book,JSON.stringify(data));}catch(_){toast("Imported, but too large to keep for next time");}const sel=$("bookSelect").value;populateBibleSelectors();if(sel)$("bookSelect").value=sel;populateChapters();toast(book+" imported");}catch(err){console.error(err);toast("Could not import that Bible file");}e.target.value="";});
 $("lessonFile")?.addEventListener("change",e=>{handleLessonFile(e.target.files?.[0]);e.target.value="";});
+$("devotionalFile")?.addEventListener("change",e=>{handleDevotionalFile(e.target.files?.[0]);e.target.value="";});
 if(localStorage.getItem("bpm_theme")==="light")document.body.classList.add("light");
 if(localStorage.getItem("bpm_font"))document.documentElement.style.setProperty("--verse-size",localStorage.getItem("bpm_font")+"rem");
 updateContinue();
-if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});navigator.serviceWorker.register("sw.js?v=10").then(r=>r.update&&r.update()).catch(()=>{});}
+if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});navigator.serviceWorker.register("sw.js?v=12").then(r=>r.update&&r.update()).catch(()=>{});}
 
 })();
 </script>

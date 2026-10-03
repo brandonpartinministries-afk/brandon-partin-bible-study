@@ -20,7 +20,7 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}
 .top{position:sticky;top:0;z-index:20;background:rgba(5,12,22,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav{max-width:1100px;margin:auto;min-height:72px;padding:8px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px}
 .brand{display:flex;align-items:center;gap:10px}.brand img{width:48px;height:48px;object-fit:cover;border-radius:10px}.brand strong{font-size:15px}.brand small{display:block;color:var(--muted);font-size:12px}
-.navlinks{display:flex;gap:7px;flex-wrap:wrap}.navlinks button,.iconbtn{border:1px solid var(--line);background:#0c1929;color:var(--text);border-radius:9px;padding:8px 11px}
+.navlinks{display:flex;gap:7px;flex-wrap:wrap}.navlinks #adminNav{font-weight:800}.navlinks button,.iconbtn{min-height:44px;border:1px solid var(--line);background:#0c1929;color:var(--text);border-radius:9px;padding:8px 11px}
 .navlinks button.active,.primary{background:linear-gradient(135deg,#3d78bd,#1d4e88);border-color:#5d9ce4}
 main{max-width:1100px;margin:auto;padding:24px 18px 60px}.screen{display:none}.screen.active{display:block}
 .hero{display:grid;grid-template-columns:1fr 1fr;gap:25px;align-items:center;padding:22px 0}.heroLogo{width:min(100%,430px);display:block;margin:auto;border-radius:20px;box-shadow:0 18px 60px #0008}.eyebrow{color:#83baff;font-size:12px;font-weight:800;letter-spacing:2px}.hero h1{font-size:clamp(38px,6vw,66px);line-height:1;margin:10px 0}.hero p{color:var(--muted);line-height:1.7}
@@ -70,7 +70,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="studies">Studies</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
-    <button type="button" data-screen="admin" id="adminNav" hidden>Admin</button>
+    <button type="button" data-screen="admin" id="adminNav">🔐 Admin</button>
   </nav>
 </div>
 </header>
@@ -297,7 +297,7 @@ async function checkAdmin(){
   const {data,error}=await supabaseClient.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
   isAdmin=!!data&&!error; updateAdminUI(); return isAdmin;
 }
-function updateAdminUI(){const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=!isAdmin;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
+function updateAdminUI(){const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=false;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
 async function adminLogin(){
  if(!supabaseClient){toast("Supabase is not configured yet");return;}
  const email=$("adminEmail").value.trim(),password=$("adminPassword").value;

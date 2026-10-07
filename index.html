@@ -68,6 +68,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="home" class="active">Home</button>
     <button type="button" data-screen="bible">Bible</button>
     <button type="button" data-screen="studies">Studies</button>
+    <button type="button" data-screen="sacred">Sacred Texts</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
     <button type="button" data-screen="admin" id="adminNav">🔐 Admin</button>
@@ -107,8 +108,9 @@ body.light .toast{background:#172033;color:#fff}
   <div class="card">
     <span class="pill">📖 Complete KJV Bible</span>
     <h1>Read the Bible</h1>
-    <p class="muted">The King James Version (standardized 1769 text) with Apocrypha is loaded from a public-domain Bible source. No AI is used.</p>
+    <p class="muted">Pick any translation from the free getBible library (default: KJV 1769 with Apocrypha). You can still import your own Bible file in Settings.</p>
     <div id="bibleStatus" class="result">Loading the Bible…</div>
+    <select id="translationSelect" aria-label="Choose Bible translation" style="margin-top:12px"></select>
     <div class="grid2" style="margin-top:12px">
       <select id="bookSelect" aria-label="Choose Bible book"></select>
       <select id="chapterSelect" aria-label="Choose chapter"></select>
@@ -123,7 +125,7 @@ body.light .toast{background:#172033;color:#fff}
 </section>
 
 <section id="studies" class="screen">
-  <div class="card"><span class="pill">📚 Bible study lessons</span><h1>Study Scripture</h1><p class="muted">Choose a published Bible study lesson. New lessons are published by the ministry administrator.</p><p id="lessonStatus" class="muted"></p></div>
+  <div class="card"><span class="pill">📚 Bible study lessons</span><h1>Study Scripture</h1><p class="muted">Choose a published Bible study lesson. New lessons are published by the ministry administrator.</p><p id="lessonStatus" class="muted"></p><button type="button" class="primary" data-action="todayStudy">📅 Today's study</button></div>
   <div class="grid" id="lessonGrid"></div>
   <div id="lessonCard" class="card" hidden></div>
 </section>
@@ -181,6 +183,18 @@ body.light .toast{background:#172033;color:#fff}
   <div class="grid" id="devotionalGrid"></div>
 </section>
 </main>
+<section id="sacred" class="screen">
+  <div class="card"><span class="pill">📜 Sacred texts</span><h1>Sacred Texts Library</h1>
+    <p class="muted">Read other sacred books next to the Bible. Load the Quran online, or upload any text you have the right to use (JSON or plain text). Texts are saved on this device.</p>
+    <select id="sacredSelect" aria-label="Choose sacred text"></select>
+    <p id="sacredStatus" class="muted"></p>
+    <div class="grid2"><button type="button" class="primary" data-action="sacredUpload">📥 Upload text</button><button type="button" class="secondary" data-action="sacredOnline">🌐 Load online</button></div>
+    <input id="sacredFile" type="file" accept=".json,.txt,.json.txt" hidden>
+    <div id="sacredReader" hidden style="margin-top:12px"><select id="sacredChapter" aria-label="Choose chapter"></select>
+      <div class="grid2" style="margin-top:10px"><button type="button" class="primary" data-action="sacredOpen">📖 Open</button><button type="button" class="danger" data-action="sacredRemove">Remove</button></div></div>
+  </div>
+  <div id="sacredCard" class="card" hidden></div>
+</section>
 <div id="toast" class="toast"></div>
 <footer>Brandon Partin Ministries Bible Study · KJV 1769 + Apocrypha</footer>
 
@@ -259,18 +273,29 @@ function loadImportedBooks(){
   Object.keys(localStorage).filter(k=>k.startsWith("bpm_book_")).forEach(k=>{try{addImportedBook(JSON.parse(localStorage.getItem(k)))}catch(_){}});
 }
 function normalizeBook(book){return (book.chapters||[]).flatMap(ch=>(ch.verses||[]).map(v=>({ref:book.book+" "+ch.chapter+":"+v.verse,text:v.text,book:book.book,chapter:Number(ch.chapter),verse:Number(v.verse)})))}
+let TRANS=localStorage.getItem("bpm_trans")||"kjva", TRANS_LIST={};
+const bibleUrl=()=>"https://api.getbible.net/v2/"+TRANS+".json";
+const transName=()=>TRANS_LIST[TRANS]?.translation||(TRANS==="kjva"?"KJV 1769 + Apocrypha":TRANS.toUpperCase());
+async function loadTranslations(){
+  try{TRANS_LIST=await loadJson("https://api.getbible.net/v2/translations.json");}catch(_){TRANS_LIST={kjva:{translation:"King James Version (1769) with Apocrypha",language:"English"}};}
+  const sel=$("translationSelect"); if(!sel)return;
+  const L=k=>TRANS_LIST[k].language||"", T=k=>TRANS_LIST[k].translation||k;
+  const keys=Object.keys(TRANS_LIST).sort((a,b)=>L(a).localeCompare(L(b))||T(a).localeCompare(T(b)));
+  sel.innerHTML=keys.map(k=>'<option value="'+escapeHtml(k)+'">'+escapeHtml(L(k)+" — "+T(k))+'</option>').join("");
+  sel.value=TRANS; sel.onchange=()=>{TRANS=sel.value;try{localStorage.setItem("bpm_trans",TRANS)}catch(_){}loadFullBible();};
+}
 async function loadFullBible(){
   try{
-    setBibleStatus("Loading KJV 1769 + Apocrypha…",true);
+    setBibleStatus("Loading "+transName()+"…",true);
     bibleVerses.length=0; fullBible.books=[]; Object.keys(bibleBookData).forEach(k=>delete bibleBookData[k]);
     let api=null;
-    try{api=await loadJson(KJVA_API);}
+    try{api=await loadJson(bibleUrl());}
     catch(e){
-      const cached=localStorage.getItem(KJVA_CACHE); if(cached)api=JSON.parse(cached); else throw e;
+      const cached=TRANS==="kjva"?localStorage.getItem(KJVA_CACHE):null; if(cached)api=JSON.parse(cached); else throw e;
     }
     const books=parseApiBible(api);
     if(!books.length)throw new Error("No books found in KJVA source");
-    try{localStorage.setItem(KJVA_CACHE,JSON.stringify(api));}catch(_){ }
+    if(TRANS==="kjva"){try{localStorage.setItem(KJVA_CACHE,JSON.stringify(api));}catch(_){ }}
     const byName={}; books.forEach(b=>byName[b.book]=b);
     const ordered=KJVA_ORDER.map(n=>byName[n]).filter(Boolean);
     const extras=books.filter(b=>!ordered.includes(b));
@@ -278,11 +303,11 @@ async function loadFullBible(){
     fullBible.books.forEach(({book})=>{bibleBookData[book]=byName[book];bibleVerses.push(...normalizeBook(byName[book]));});
     loadImportedBooks();
     populateBibleSelectors();
-    setBibleStatus("KJV 1769 + Apocrypha ready — "+bibleVerses.length.toLocaleString()+" verses across "+fullBible.books.length+" books.");
+    setBibleStatus(transName()+" ready — "+bibleVerses.length.toLocaleString()+" verses across "+fullBible.books.length+" books.");
   }catch(err){
     console.error(err);
-    setBibleStatus("The KJV 1769 + Apocrypha could not be loaded. Connect to the internet and tap Retry.");
-    const el=$("bibleStatus"); if(el) el.innerHTML='The KJV 1769 + Apocrypha could not be loaded. <button type="button" class="secondary" data-action="loadBible">Retry</button>';
+    setBibleStatus(transName()+" could not be loaded. Connect to the internet and tap Retry.");
+    const el=$("bibleStatus"); if(el) el.innerHTML=transName()+' could not be loaded. <button type="button" class="secondary" data-action="loadBible">Retry</button>';
   }
 }
 const SUPABASE_URL = window.BPM_SUPABASE_URL || "";
@@ -328,9 +353,20 @@ const devotionals=[
  {title:"A Grateful Heart",ref:"1 Thessalonians 5:18",text:"Name three gifts from God today. Spend a moment giving thanks for each one."},
  {title:"Walk by Faith",ref:"2 Corinthians 5:7",text:"Think about one faithful step you can take today even when you cannot see the whole path."}
 ];
+const DOY=Math.min(365,Math.floor((Date.now()-new Date(new Date().getFullYear(),0,0))/864e5));
+const BK=KJVA_ORDER.slice(0,39).concat(KJVA_ORDER.slice(53)), CH=[50,40,27,36,34,24,21,4,31,24,22,25,29,36,10,13,10,42,150,31,12,8,66,52,5,48,12,14,3,9,1,4,7,3,3,3,2,14,4,28,16,24,21,28,16,16,13,6,6,4,4,5,3,6,4,3,1,13,5,5,3,5,1,1,1,22];
+const ALLCH=CH.flatMap((n,b)=>Array.from({length:n},(_,i)=>[b,i+1]));
+const QSETS=[["What is the main event or teaching in today's reading?","What does it reveal about God's character?","What is one way to respond today?"],["Which verse stands out most, and why?","Who is this written to, and what did they need?","What truth will you carry with you today?"],["What question does this reading raise?","How does it connect to Jesus or the rest of Scripture?","What will you pray about after reading?"]];
+const FOCUS=["Praise: name who God is and thank Him for it.","Trust: give God one worry and leave it with Him.","Gratitude: list three gifts you received this week.","Confession: bring anything weighing on you to God honestly.","Wisdom: ask what it would look like to act on this today.","Rest: slow down and let God's peace settle in.","Service: look for one person you can encourage today."];
+const PRAYERS=["Lord, I praise You. Fill my day with worship.","Father, I trust You with what I cannot control.","Thank You, God, for every good gift.","Lord, forgive me and renew my heart.","God, give me wisdom and a willing spirit.","Jesus, give me Your rest today.","Lord, use me to love the people around me."];
+const DEV365=Array.from({length:365},(_,i)=>{const d=i+1,ps=i%150+1,pr=i%31+1;return{title:"Day "+d+": Psalm "+ps,ref:"Psalm "+ps+"; Proverbs "+pr,text:"Read Psalm "+ps+" slowly, then Proverbs "+pr+". Choose one verse to carry through the day. "+FOCUS[i%7],prayer:PRAYERS[i%7],series:"365-Day Devotional"};});
+const STUDY365=Array.from({length:365},(_,i)=>{const d=i+1,a=Math.floor(i*ALLCH.length/365),z=Math.floor(d*ALLCH.length/365)-1,[b1,c1]=ALLCH[a],[b2,c2]=ALLCH[z];
+  const label=b1===b2?BK[b1]+" "+c1+(c2!==c1?"–"+c2:""):BK[b1]+" "+c1+" – "+BK[b2]+" "+c2;
+  return{title:"Day "+d+": "+label,ref:label,text:"Today's reading in the read-through-the-Bible-in-a-year plan. Read it in the Bible tab, then work through the questions.",qs:QSETS[i%3],__first:{book:BK[b1],chapter:c1}};});
+devotionals.unshift(...DEV365); lessons.unshift(...STUDY365);
 let importedDevotionals=[];
 let allDevotionals=[...devotionals];
-let devIndex=0;
+let devIndex=DOY-1;
 function loadDevotionals(){ importedDevotionals=[]; allDevotionals=[...devotionals]; }
 function saveDevotionals(){try{localStorage.setItem("bpm_devotionals",JSON.stringify(importedDevotionals));}catch(_){toast("Devotionals could not be saved on this device");}}
 function validDevotional(x){return x&&typeof x==="object"&&String(x.title||"").trim()&&String(x.ref||"").trim()&&String(x.text||"").trim();}
@@ -416,7 +452,7 @@ function openLesson(i){
   card.hidden=false;
   card.innerHTML='<span class="pill">'+escapeHtml(l.ref)+'</span><h2>'+escapeHtml(l.title)+'</h2><p>'+escapeHtml(l.text)+'</p>'+
     l.qs.map((q,n)=>'<div class="result"><b>'+String(n+1).padStart(2,"0")+' · '+escapeHtml(q)+'</b></div>').join("")+
-    '<br><button type="button" class="primary" data-action="openJournal">Write reflection</button>';
+    (l.__first?'<br><button type="button" class="secondary" data-readref="'+escapeAttr(l.__first.book+"|"+l.__first.chapter)+'">📖 Read in Bible</button> ':'')+'<br><button type="button" class="primary" data-action="openJournal">Write reflection</button>';
   showScreen("studies");card.scrollIntoView({behavior:"smooth",block:"center"});
 }
 function nextDev(){devIndex=(devIndex+1)%allDevotionals.length;renderDevotional();showScreen("devotional")}
@@ -476,6 +512,7 @@ function handleTap(e){
  const customDev=e.target.closest("[data-devotional]");if(customDev){const d=importedDevotionals[Number(customDev.dataset.devotional)];if(d){devIndex=allDevotionals.findIndex(x=>x.__imported&&x.title===d.title&&x.ref===d.ref);renderDevotional();showScreen("devotional");}return}
  const delStudy=e.target.closest("[data-admin-delete-study]");if(delStudy){deleteCloud("study_lessons",delStudy.dataset.adminDeleteStudy);return;}
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
+ const rr=e.target.closest("[data-readref]");if(rr){const [b,c]=rr.dataset.readref.split("|");showScreen("bible");if(bibleBookData[b]){$("bookSelect").value=b;populateChapters();$("chapterSelect").value=c;openChapter();}else toast("The Bible is still loading");return}
  const action=e.target.closest("[data-action]");if(!action)return;
  switch(action.dataset.action){
   case"today":showScreen("devotional");break;
@@ -504,21 +541,83 @@ function handleTap(e){
   case"exportLessons":exportLessons();break;
   case"adminLogin":adminLogin();break;
   case"adminLogout":adminLogout();break;
+  case"todayStudy":openLesson(DOY-1);break;
+  case"sacredUpload":$("sacredFile").click();break;
+  case"sacredOnline":sacredOnline();break;
+  case"sacredOpen":sacredOpen();break;
+  case"sacredRemove":sacredRemove();break;
   case"adminImportLesson":publishLessons($("adminLessonFile").files?.[0]);break;
   case"adminImportDevotional":publishDevotionals($("adminDevotionalFile").files?.[0]);break;
  }
 }
+const SACRED=[
+ {id:"bom",name:"Book of Mormon"},{id:"dc",name:"Doctrine and Covenants"},{id:"pgp",name:"Pearl of Great Price"},
+ {id:"quran",name:"Quran (Pickthall English)",api:"https://api.alquran.cloud/v1/quran/en.pickthall"},
+ {id:"tanakh",name:"Torah / Tanakh"},{id:"talmud",name:"Talmud"},{id:"enoch",name:"Book of Enoch"},{id:"jubilees",name:"Book of Jubilees"},
+ {id:"gita",name:"Bhagavad Gita"},{id:"upan",name:"Upanishads"},{id:"veda",name:"Rig Veda"},{id:"dhamma",name:"Dhammapada"},{id:"tripi",name:"Tripitaka"},
+ {id:"tao",name:"Tao Te Ching"},{id:"analects",name:"Analects of Confucius"},{id:"ggs",name:"Guru Granth Sahib"},{id:"avesta",name:"Avesta"},
+ {id:"botd",name:"Egyptian Book of the Dead"},{id:"other",name:"Other sacred text (custom)"}];
+const sacredEntry=()=>SACRED.find(x=>x.id===$("sacredSelect").value)||SACRED[0];
+const sacredKey=id=>"bpm_sacred_"+id;
+const sacredGet=id=>{try{return JSON.parse(localStorage.getItem(sacredKey(id))||"null")}catch(_){return null}};
+function sacredInit(){
+  const sel=$("sacredSelect"); if(!sel)return;
+  sel.innerHTML=SACRED.map(x=>'<option value="'+x.id+'">'+escapeHtml(x.name)+(sacredGet(x.id)?" ✓":"")+'</option>').join("");
+  sel.onchange=sacredRefresh;
+  $("sacredFile").addEventListener("change",async e=>{const f=e.target.files?.[0];e.target.value="";if(!f)return;
+    try{const raw=await f.text();let name=sacredEntry().name;if(sacredEntry().id==="other")name=prompt("Name of this text?",f.name.replace(/\.[^.]+$/,""))||name;
+      sacredSave(sacredEntry().id==="other"?"other":sacredEntry().id,parseSacred(raw,name));}catch(err){console.error(err);toast("Could not read that file")}});
+  sacredRefresh();
+}
+function sacredSave(id,book){
+  if(!book||!book.chapters.length){toast("No readable text found");return}
+  try{localStorage.setItem(sacredKey(id),JSON.stringify(book))}catch(_){toast("Too large to save on this device")}
+  const keep=$("sacredSelect").value;sacredInit();$("sacredSelect").value=keep;sacredRefresh();toast("Added "+book.title);
+}
+function parseSacred(raw,name){
+  try{const d=JSON.parse(raw),c=Array.isArray(d)?d:(d.chapters||d.books);
+    if(Array.isArray(c)&&c.length)return{title:d.title||d.book||name,chapters:c.map((x,i)=>({chapter:x.chapter||x.number||i+1,title:x.title||x.name||"",verses:(x.verses||x.ayahs||[]).map((v,j)=>({verse:v.verse||v.number||v.numberInSurah||j+1,text:String(v.text||v).trim()})).filter(v=>v.text)})).filter(x=>x.verses.length)};
+  }catch(_){}
+  const paras=raw.replace(/\r/g,"").split(/\n\s*\n/).map(p=>p.replace(/\s+/g," ").trim()).filter(Boolean);
+  const H=/^(chapter|surah|sura|section|book|canto|hymn|psalm|sutra|part)\b/i,isH=p=>H.test(p)&&p.length<80,hasH=paras.some(isH),ch=[];let cur=null;
+  paras.forEach(p=>{if(isH(p)){cur={chapter:ch.length+1,title:p,verses:[]};ch.push(cur);return}
+    if(!cur||(!hasH&&cur.verses.length>=20)){cur={chapter:ch.length+1,title:"Part "+(ch.length+1),verses:[]};ch.push(cur)}
+    cur.verses.push({verse:cur.verses.length+1,text:p});});
+  return{title:name,chapters:ch.filter(c=>c.verses.length)};
+}
+function sacredRefresh(){
+  const e=sacredEntry(),b=sacredGet(e.id);
+  $("sacredStatus").textContent=b?b.title+" — "+b.chapters.length+" sections saved on this device.":(e.api?"Not loaded yet. Tap Load online, or upload a file.":"Not loaded yet. Upload a JSON or text file of this book.");
+  $("sacredReader").hidden=!b;
+  if(b)$("sacredChapter").innerHTML=b.chapters.map((c,i)=>'<option value="'+i+'">'+escapeHtml(c.chapter+(c.title?". "+c.title:""))+'</option>').join("");
+  $("sacredCard").hidden=true;
+}
+async function sacredOnline(){
+  const e=sacredEntry(); if(!e.api){toast("No online source for this book yet. Upload a file instead.");return}
+  $("sacredStatus").textContent="Loading "+e.name+"…";
+  try{const r=await loadJson(e.api),s=r.data?.surahs||r.data;
+    sacredSave(e.id,{title:e.name,chapters:s.map(x=>({chapter:x.number,title:x.englishName||"",verses:x.ayahs.map(a=>({verse:a.numberInSurah,text:a.text}))}))});
+  }catch(err){console.error(err);$("sacredStatus").textContent="Could not load online. Check your connection or upload a file.";}
+}
+function sacredOpen(){
+  const e=sacredEntry(),b=sacredGet(e.id); if(!b)return;
+  const c=b.chapters[Number($("sacredChapter").value)||0],card=$("sacredCard");card.hidden=false;
+  card.innerHTML='<span class="pill">📜 '+escapeHtml(b.title)+'</span><h2>'+escapeHtml(c.chapter+(c.title?". "+c.title:""))+'</h2>'+c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+'</div>').join("");
+  card.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function sacredRemove(){const e=sacredEntry();if(!sacredGet(e.id)||!confirm("Remove "+e.name+" from this device?"))return;localStorage.removeItem(sacredKey(e.id));const k=e.id;sacredInit();$("sacredSelect").value=k;sacredRefresh();}
 document.addEventListener("click",handleTap);
 document.addEventListener("touchend",handleTap,{passive:true});
 $("search")?.addEventListener("input",search);
 populateBibleSelectors();
+loadTranslations();
 loadFullBible();
 $("prayer").value=localStorage.getItem("bpm_prayer")||"";
 $("notes").value=localStorage.getItem("bpm_notes")||"";
 $("reminders").checked=localStorage.getItem("bpm_reminders")==="1";
 $("reminders").addEventListener("change",e=>{localStorage.setItem("bpm_reminders",e.target.checked?"1":"0");toast(e.target.checked?"Reminder enabled":"Reminder disabled")});
 $("brandLogo").src=LOGO_URI;$("heroLogo").src=LOGO_URI;
-loadLessons();renderLessons();loadDevotionals();renderDevotionals();renderFavorites();renderDevotional();
+loadLessons();renderLessons();loadDevotionals();renderDevotionals();renderFavorites();renderDevotional();sacredInit();
 updateAdminUI();
 if(supabaseClient){supabaseClient.auth.onAuthStateChange(()=>setTimeout(async()=>{await checkAdmin();if(isAdmin)await loadCloudContent();else await loadCloudContent();},0));checkAdmin().then(loadCloudContent).catch(()=>{});}
 $("bibleFile")?.addEventListener("change",async e=>{const f=e.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());const book=addImportedBook(data);try{localStorage.setItem("bpm_book_"+book,JSON.stringify(data));}catch(_){toast("Imported, but too large to keep for next time");}const sel=$("bookSelect").value;populateBibleSelectors();if(sel)$("bookSelect").value=sel;populateChapters();toast(book+" imported");}catch(err){console.error(err);toast("Could not import that Bible file");}e.target.value="";});

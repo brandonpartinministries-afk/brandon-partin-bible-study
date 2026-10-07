@@ -32,7 +32,13 @@ input,textarea,select{width:100%;border:1px solid var(--line);background:#081524
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#eaf3ff;color:#0a1725;padding:11px 16px;border-radius:999px;font-weight:700;box-shadow:0 10px 30px #0008;display:none;z-index:50}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 @media(max-width:760px){.hero{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.nav{align-items:flex-start}.navlinks{overflow-x:auto;flex-wrap:nowrap;max-width:58vw}.navlinks button{white-space:nowrap}.brand small{display:none}}
-.verseRow{padding:14px 0;border-bottom:1px solid var(--line);line-height:1.65}.verseNum{display:inline-block;min-width:34px;font-weight:700;color:var(--blue)}.bibleTools{display:flex;gap:8px;flex-wrap:wrap}.loading{opacity:.75}</style>
+.verseRow{padding:14px 0;border-bottom:1px solid var(--line);line-height:1.65}.verseNum{display:inline-block;min-width:34px;font-weight:700;color:var(--blue)}.bibleTools{display:flex;gap:8px;flex-wrap:wrap}.loading{opacity:.75}.player{position:fixed;left:0;right:0;bottom:0;z-index:30;max-height:75vh;overflow:auto;background:#0b1726;border-top:1px solid var(--line);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 30px #0008}
+.player[hidden]{display:none}.player .wrap{max-width:1100px;margin:auto}.player h3{margin:10px 0 6px}
+.player .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}.player .bar>*{flex:1;min-width:90px}
+.player iframe{width:100%;height:232px;border:0;border-radius:12px;margin-top:8px}.player audio{width:100%}
+.trk{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}.trk b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.verseRow.speaking{background:#1d4e8855;border-radius:8px}
+</style>
 <style>
 :root{--accent:#69a9ff;--shadow:0 14px 40px rgba(0,0,0,.22)}
 body{transition:background .2s,color .2s}.card,.tile{box-shadow:var(--shadow)}
@@ -68,6 +74,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="home" class="active">Home</button>
     <button type="button" data-screen="bible">Bible</button>
     <button type="button" data-screen="studies">Studies</button>
+    <button type="button" data-action="togglePlayer">🎵 Listen</button>
     <button type="button" data-screen="sacred">Sacred Texts</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
@@ -119,7 +126,7 @@ body.light .toast{background:#172033;color:#fff}
     <div class="searchRow"><input id="search" placeholder="🔍 Search the entire Bible" style="margin-top:12px"><button type="button" class="secondary" data-action="clearSearch" style="margin-top:12px">Clear</button></div>
     <div id="searchResults" style="margin-top:10px"></div>
   </div>
-  <div class="card readingTools"><button type="button" class="secondary" data-action="prevChapter">← Previous</button><button type="button" class="secondary" data-action="nextChapter">Next →</button><button type="button" class="secondary" data-action="fontMinus">A−</button><button type="button" class="secondary" data-action="fontPlus">A+</button></div>
+  <div class="card readingTools"><button type="button" class="secondary" data-action="prevChapter">← Previous</button><button type="button" class="secondary" data-action="nextChapter">Next →</button><button type="button" class="secondary" data-action="fontMinus">A−</button><button type="button" class="secondary" data-action="fontPlus">A+</button><button type="button" class="secondary" data-action="speak">🔊 Listen</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
   <div id="chapterCard" class="card" hidden></div>
   <div id="verseCard" class="card" hidden></div>
 </section>
@@ -188,6 +195,7 @@ body.light .toast{background:#172033;color:#fff}
     <p class="muted">Read other sacred books next to the Bible. Load the Quran online, or upload any text you have the right to use (JSON or plain text). Texts are saved on this device.</p>
     <select id="sacredSelect" aria-label="Choose sacred text"></select>
     <p id="sacredStatus" class="muted"></p>
+    <div class="grid2" style="margin-bottom:10px"><button type="button" class="secondary" data-action="speak">🔊 Read aloud</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
     <div class="grid2"><button type="button" class="primary" data-action="sacredUpload">📥 Upload text</button><button type="button" class="secondary" data-action="sacredOnline">🌐 Load online</button></div>
     <input id="sacredFile" type="file" accept=".json,.txt,.json.txt" hidden>
     <div id="sacredReader" hidden style="margin-top:12px"><select id="sacredChapter" aria-label="Choose chapter"></select>
@@ -195,6 +203,22 @@ body.light .toast{background:#172033;color:#fff}
   </div>
   <div id="sacredCard" class="card" hidden></div>
 </section>
+<div id="player" class="player" hidden><div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b>🎵 Music &amp; 🔊 Read aloud</b><button type="button" class="secondary" data-action="togglePlayer">Close</button></div>
+  <h3>Read aloud</h3>
+  <p class="muted" style="margin:0">Open a Bible chapter, devotional, study or sacred text, then tap Read. Uses your device's voices.</p>
+  <div class="bar"><button type="button" class="primary" data-action="speak">🔊 Read this page</button><button type="button" class="secondary" data-action="speakPause">⏸ Pause / resume</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
+  <div class="bar"><select id="speechRate" aria-label="Speed"><option value=".8">Slower</option><option value="1" selected>Normal</option><option value="1.2">Faster</option><option value="1.4">Fastest</option></select><select id="voiceSel" aria-label="Voice"></select></div>
+  <label><input id="autoNext" type="checkbox" style="width:auto;margin-right:8px">Keep reading into the next Bible chapter</label>
+  <h3>Gospel music</h3>
+  <p class="muted" style="margin:0">Add music you have the right to play: upload audio files, paste a YouTube or Spotify playlist/song link, or paste a direct audio link.</p>
+  <div class="bar"><input id="musicName" placeholder="Name (optional)"><input id="musicLink" placeholder="Paste a link"><button type="button" class="primary" data-action="musicAddLink">Add link</button></div>
+  <div class="bar"><button type="button" class="secondary" data-action="musicPick">📥 Add audio files</button><button type="button" class="secondary" data-action="musicPrev">⏮</button><button type="button" class="secondary" data-action="musicNext">⏭</button></div>
+  <input id="musicFiles" type="file" accept="audio/*" multiple hidden>
+  <audio id="audioEl" controls hidden></audio><iframe id="embedEl" hidden allow="autoplay; encrypted-media" title="Music player"></iframe>
+  <div id="trackList"></div>
+  <p class="muted">Files you add from your device play until you close the app. Links are saved.</p>
+</div></div>
 <div id="toast" class="toast"></div>
 <footer>Brandon Partin Ministries Bible Study · KJV 1769 + Apocrypha</footer>
 
@@ -512,6 +536,8 @@ function handleTap(e){
  const customDev=e.target.closest("[data-devotional]");if(customDev){const d=importedDevotionals[Number(customDev.dataset.devotional)];if(d){devIndex=allDevotionals.findIndex(x=>x.__imported&&x.title===d.title&&x.ref===d.ref);renderDevotional();showScreen("devotional");}return}
  const delStudy=e.target.closest("[data-admin-delete-study]");if(delStudy){deleteCloud("study_lessons",delStudy.dataset.adminDeleteStudy);return;}
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
+ const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
+ const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
  const rr=e.target.closest("[data-readref]");if(rr){const [b,c]=rr.dataset.readref.split("|");showScreen("bible");if(bibleBookData[b]){$("bookSelect").value=b;populateChapters();$("chapterSelect").value=c;openChapter();}else toast("The Bible is still loading");return}
  const action=e.target.closest("[data-action]");if(!action)return;
  switch(action.dataset.action){
@@ -542,6 +568,14 @@ function handleTap(e){
   case"adminLogin":adminLogin();break;
   case"adminLogout":adminLogout();break;
   case"todayStudy":openLesson(DOY-1);break;
+  case"togglePlayer":$("player").hidden=!$("player").hidden;break;
+  case"speak":speakCurrent();break;
+  case"speakPause":speechSynthesis.speaking&&(speechSynthesis.paused?speechSynthesis.resume():speechSynthesis.pause());break;
+  case"speakStop":speakStop();break;
+  case"musicAddLink":musicAddLink();break;
+  case"musicPick":$("musicFiles").click();break;
+  case"musicPrev":playTrack((cur-1+tracks.length)%Math.max(1,tracks.length));break;
+  case"musicNext":playTrack((cur+1)%Math.max(1,tracks.length));break;
   case"sacredUpload":$("sacredFile").click();break;
   case"sacredOnline":sacredOnline();break;
   case"sacredOpen":sacredOpen();break;
@@ -550,12 +584,61 @@ function handleTap(e){
   case"adminImportDevotional":publishDevotionals($("adminDevotionalFile").files?.[0]);break;
  }
 }
+let spQ=[],spI=0,spOn=false,tracks=[],cur=-1;
+const canSpeak=()=>"speechSynthesis" in window;
+const onScr=id=>!!document.querySelector("#"+id+".screen.active");
+function fillVoices(){const sel=$("voiceSel");if(!sel||!canSpeak())return;const v=speechSynthesis.getVoices();sel.innerHTML='<option value="">Automatic voice</option>'+v.map(x=>'<option value="'+escapeAttr(x.name)+'">'+escapeHtml(x.name+" ("+x.lang+")")+'</option>').join("");}
+function rowsOf(card){return [...card.querySelectorAll(".verseRow")].map(el=>{const c=el.cloneNode(true);c.querySelectorAll(".verseNum,button").forEach(x=>x.remove());return{el,text:c.textContent.trim()}}).filter(x=>x.text);}
+function speakCurrent(){
+  if(!canSpeak()){toast("Read aloud is not supported in this browser");return}
+  const q=[];
+  if(onScr("bible")&&!$("chapterCard").hidden){const t=$("chapterCard").querySelector("h2")?.textContent;if(t)q.push({text:t.replace(/(\d+)$/," chapter $1")});q.push(...rowsOf($("chapterCard")));}
+  else if(onScr("sacred")&&!$("sacredCard").hidden){q.push({text:$("sacredCard").querySelector("h2").textContent},...rowsOf($("sacredCard")));}
+  else if(onScr("devotional")||onScr("home")){const d=allDevotionals[devIndex%allDevotionals.length];q.push({text:d.title+". "+d.text+" Scripture: "+d.ref+"."+(d.prayer?" Prayer. "+d.prayer:"")});}
+  else if(onScr("studies")&&!$("lessonCard").hidden){q.push({text:$("lessonCard").innerText.replace(/Write reflection|Read in Bible/g,"")});}
+  if(!q.length){toast("Open a chapter or devotional first");return}
+  speechSynthesis.cancel();spQ=q;spI=0;spOn=true;spNext();
+}
+function spNext(){
+  document.querySelectorAll(".verseRow.speaking").forEach(x=>x.classList.remove("speaking"));
+  if(!spOn)return;
+  if(spI>=spQ.length){spOn=false;if($("autoNext").checked&&onScr("bible")){chapterMove(1);setTimeout(speakCurrent,700);}return}
+  const it=spQ[spI],u=new SpeechSynthesisUtterance(it.text);u.rate=Number($("speechRate").value)||1;
+  const v=speechSynthesis.getVoices().find(x=>x.name===$("voiceSel").value);
+  if(v){u.voice=v;u.lang=v.lang}else{u.lang=TRANS_LIST[TRANS]?.lang||"en-US"}
+  u.onend=()=>{spI++;spNext()};u.onerror=()=>{spI++;spNext()};
+  if(it.el){it.el.classList.add("speaking");it.el.scrollIntoView({behavior:"smooth",block:"center"})}
+  speechSynthesis.speak(u);
+}
+function speakStop(){spOn=false;if(canSpeak())speechSynthesis.cancel();document.querySelectorAll(".verseRow.speaking").forEach(x=>x.classList.remove("speaking"));}
+function saveTracks(){try{localStorage.setItem("bpm_music",JSON.stringify(tracks.filter(t=>!t.temp)))}catch(_){}}
+function renderTracks(){const b=$("trackList");if(!b)return;b.innerHTML=tracks.length?tracks.map((t,i)=>'<div class="trk"><b>'+(i===cur?"▶ ":"")+escapeHtml(t.name)+'</b><button type="button" class="secondary" data-track="'+i+'">Play</button><button type="button" class="danger" data-trackdel="'+i+'">✕</button></div>').join(""):'<p class="muted">No music added yet.</p>';}
+function playTrack(i){
+  const t=tracks[i];if(!t)return;cur=i;const a=$("audioEl"),f=$("embedEl");
+  if(t.kind==="audio"){f.hidden=true;f.src="about:blank";a.hidden=false;a.src=t.url;a.play().catch(()=>{});}
+  else{a.pause();a.hidden=true;f.hidden=false;f.src=t.url;}
+  renderTracks();
+}
+function musicAddLink(){
+  const url=$("musicLink").value.trim();if(!url){toast("Paste a link first");return}
+  let kind="audio",src=url,name=$("musicName").value.trim(),m;
+  if(m=url.match(/(?:youtu\.be\/|[?&]v=|embed\/)([\w-]{11})/)){kind="embed";const l=url.match(/[?&]list=([\w-]+)/);src=l?"https://www.youtube.com/embed/"+m[1]+"?list="+l[1]+"&playsinline=1":"https://www.youtube.com/embed/"+m[1]+"?playsinline=1";name=name||"YouTube video";}
+  else if(m=url.match(/youtube\.com\/playlist\?.*list=([\w-]+)/)){kind="embed";src="https://www.youtube.com/embed/videoseries?list="+m[1]+"&playsinline=1";name=name||"YouTube playlist";}
+  else if(m=url.match(/open\.spotify\.com\/(?:intl-\w+\/)?(playlist|album|track|episode|show)\/(\w+)/)){kind="embed";src="https://open.spotify.com/embed/"+m[1]+"/"+m[2];name=name||"Spotify "+m[1];}
+  else if(!/^https?:\/\//i.test(url)){toast("That does not look like a link");return}
+  tracks.push({name:name||url.split("/").pop()||"Audio link",url:src,kind});saveTracks();renderTracks();$("musicLink").value="";$("musicName").value="";toast("Added");
+}
+$("musicFiles")?.addEventListener("change",e=>{[...e.target.files].forEach(f=>tracks.push({name:f.name.replace(/\.[^.]+$/,""),url:URL.createObjectURL(f),kind:"audio",temp:true}));e.target.value="";renderTracks();if(cur<0&&tracks.length)playTrack(0);});
+$("audioEl")?.addEventListener("ended",()=>{if(tracks.length)playTrack((cur+1)%tracks.length)});
+try{tracks=JSON.parse(localStorage.getItem("bpm_music")||"[]")}catch(_){tracks=[]}
+if(canSpeak()){fillVoices();speechSynthesis.onvoiceschanged=fillVoices;}
+renderTracks();
 const SACRED=[
  {id:"bom",name:"Book of Mormon",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/book-of-mormon.json"},{id:"dc",name:"Doctrine and Covenants",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/doctrine-and-covenants.json"},{id:"pgp",name:"Pearl of Great Price",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/pearl-of-great-price.json"},
  {id:"quran",name:"Quran (Pickthall English)",api:"https://api.alquran.cloud/v1/quran/en.pickthall"},
- {id:"tanakh",name:"Torah / Tanakh"},{id:"talmud",name:"Talmud"},{id:"enoch",name:"Book of Enoch"},{id:"jubilees",name:"Book of Jubilees"},
- {id:"gita",name:"Bhagavad Gita"},{id:"upan",name:"Upanishads"},{id:"veda",name:"Rig Veda"},{id:"dhamma",name:"Dhammapada"},{id:"tripi",name:"Tripitaka"},
- {id:"tao",name:"Tao Te Ching"},{id:"analects",name:"Analects of Confucius"},{id:"ggs",name:"Guru Granth Sahib"},{id:"avesta",name:"Avesta"},
+ {id:"tanakh",name:"Torah / Tanakh"},{id:"enoch",name:"Book of Enoch"},{id:"jubilees",name:"Book of Jubilees"},
+ {id:"gita",name:"Bhagavad Gita"},{id:"upan",name:"Upanishads"},{id:"veda",name:"Rig Veda"},{id:"dhamma",name:"Dhammapada"},
+ {id:"tao",name:"Tao Te Ching"},{id:"analects",name:"Analects of Confucius"},{id:"avesta",name:"Avesta"},
  {id:"botd",name:"Egyptian Book of the Dead"},{id:"other",name:"Other sacred text (custom)"}];
 const sacredEntry=()=>SACRED.find(x=>x.id===$("sacredSelect").value)||SACRED[0];
 const sacredKey=id=>"bpm_sacred_"+id;

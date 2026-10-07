@@ -1,0 +1,19 @@
+{
+  "title": "Name of the book",
+  "chapters": [
+    {
+      "chapter": 1,
+      "title": "Optional chapter title",
+      "verses": [
+        {
+          "verse": 1,
+          "text": "First verse or paragraph."
+        },
+        {
+          "verse": 2,
+          "text": "Second verse or paragraph."
+        }
+      ]
+    }
+  ]
+}

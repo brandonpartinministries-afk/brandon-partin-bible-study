@@ -551,7 +551,7 @@ function handleTap(e){
  }
 }
 const SACRED=[
- {id:"bom",name:"Book of Mormon"},{id:"dc",name:"Doctrine and Covenants"},{id:"pgp",name:"Pearl of Great Price"},
+ {id:"bom",name:"Book of Mormon",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/book-of-mormon.json"},{id:"dc",name:"Doctrine and Covenants",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/doctrine-and-covenants.json"},{id:"pgp",name:"Pearl of Great Price",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/pearl-of-great-price.json"},
  {id:"quran",name:"Quran (Pickthall English)",api:"https://api.alquran.cloud/v1/quran/en.pickthall"},
  {id:"tanakh",name:"Torah / Tanakh"},{id:"talmud",name:"Talmud"},{id:"enoch",name:"Book of Enoch"},{id:"jubilees",name:"Book of Jubilees"},
  {id:"gita",name:"Bhagavad Gita"},{id:"upan",name:"Upanishads"},{id:"veda",name:"Rig Veda"},{id:"dhamma",name:"Dhammapada"},{id:"tripi",name:"Tripitaka"},
@@ -592,11 +592,17 @@ function sacredRefresh(){
   if(b)$("sacredChapter").innerHTML=b.chapters.map((c,i)=>'<option value="'+i+'">'+escapeHtml(c.chapter+(c.title?". "+c.title:""))+'</option>').join("");
   $("sacredCard").hidden=true;
 }
+function apiToBook(r,name){
+  const q=r.data?.surahs,out=[],vs=a=>(a||[]).map(v=>({verse:v.verse,text:v.text}));
+  if(q)return{title:name,chapters:q.map(x=>({chapter:x.number,title:x.englishName||"",verses:x.ayahs.map(a=>({verse:a.numberInSurah,text:a.text}))}))};
+  (r.books||[]).forEach(b=>(b.chapters||[]).forEach(c=>out.push({chapter:out.length+1,title:b.book+" "+c.chapter,verses:vs(c.verses)})));
+  (r.sections||[]).forEach(x=>out.push({chapter:out.length+1,title:"Section "+x.section,verses:vs(x.verses)}));
+  return{title:name,chapters:out.filter(c=>c.verses.length)};
+}
 async function sacredOnline(){
   const e=sacredEntry(); if(!e.api){toast("No online source for this book yet. Upload a file instead.");return}
   $("sacredStatus").textContent="Loading "+e.name+"…";
-  try{const r=await loadJson(e.api),s=r.data?.surahs||r.data;
-    sacredSave(e.id,{title:e.name,chapters:s.map(x=>({chapter:x.number,title:x.englishName||"",verses:x.ayahs.map(a=>({verse:a.numberInSurah,text:a.text}))}))});
+  try{sacredSave(e.id,apiToBook(await loadJson(e.api),e.name));
   }catch(err){console.error(err);$("sacredStatus").textContent="Could not load online. Check your connection or upload a file.";}
 }
 function sacredOpen(){

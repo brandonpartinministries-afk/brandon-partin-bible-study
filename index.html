@@ -38,6 +38,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .player iframe{width:100%;height:232px;border:0;border-radius:12px;margin-top:8px}.player audio{width:100%}
 .trk{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}.trk b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .verseRow.speaking{background:#1d4e8855;border-radius:8px}
+mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}
+.chipbtn{width:auto;display:inline-block;min-height:34px;padding:4px 10px;margin:3px;font-size:.85rem}
 </style>
 <style>
 :root{--accent:#69a9ff;--shadow:0 14px 40px rgba(0,0,0,.22)}
@@ -73,10 +75,10 @@ body.light .toast{background:#172033;color:#fff}
   <nav class="navlinks" aria-label="Main navigation">
     <button type="button" data-screen="home" class="active">Home</button>
     <button type="button" data-screen="bible">Bible</button>
+    <button type="button" data-screen="concordance">Concordance</button>
     <button type="button" data-screen="studies">Studies</button>
     <button type="button" data-action="togglePlayer">🎵 Listen</button>
     <button type="button" data-screen="sacred">Sacred Texts</button>
-    <button type="button" data-screen="strongs">Strong's</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
     <button type="button" data-screen="admin" id="adminNav">🔐 Admin</button>
@@ -191,6 +193,16 @@ body.light .toast{background:#172033;color:#fff}
   <div class="grid" id="devotionalGrid"></div>
 </section>
 </main>
+<section id="concordance" class="screen">
+  <div class="card"><span class="pill">🔎 Concordance</span><h1>Bible Concordance</h1>
+    <p class="muted">Find every verse that contains a word, in the translation you picked on the Bible tab. Tap a letter to browse all the words with how often each appears.</p>
+    <div style="display:flex;gap:8px"><input id="concQ" placeholder="Search a word, e.g. grace" autocapitalize="none" style="flex:1;min-width:0"><button type="button" class="primary" data-action="concSearch" style="width:auto">Search</button></div>
+    <div class="grid2" style="margin-top:10px"><select id="concGroup" aria-label="Where to search"><option value="all">Whole Bible</option><option value="ot">Old Testament</option><option value="nt">New Testament</option></select>
+      <label style="display:flex;align-items:center;gap:8px"><input id="concForms" type="checkbox" style="width:auto">Include word endings</label></div>
+    <div id="concLetters" style="margin-top:10px"></div><div id="concWords"></div>
+  </div>
+  <div id="concOut" class="card" hidden></div>
+</section>
 <section id="sacred" class="screen">
   <div class="card"><span class="pill">📜 Sacred texts</span><h1>Sacred Texts Library</h1>
     <p class="muted">Read other sacred books next to the Bible. Load the Quran online, or upload any text you have the right to use (JSON or plain text). Texts are saved on this device.</p>
@@ -204,16 +216,6 @@ body.light .toast{background:#172033;color:#fff}
       <div class="grid2" style="margin-top:10px"><button type="button" class="primary" data-action="sacredOpen">📖 Open</button><button type="button" class="danger" data-action="sacredRemove">Remove</button></div></div>
   </div>
   <div id="sacredCard" class="card" hidden></div>
-</section>
-<section id="strongs" class="screen">
-  <div class="card"><span class="pill">🔎 Strong's Concordance</span><h1>Strong's Concordance</h1>
-    <p class="muted">Look up Hebrew (H) and Greek (G) words by Strong's number (like H430 or G26), by transliteration, or by meaning.</p>
-    <p class="muted">Dictionary data from the OpenScriptures Strong's project (CC BY-SA).</p>
-    <p id="strongsStatus" class="muted"></p>
-    <div class="searchRow"><input id="strongsQ" placeholder="🔍 H430, G26, agape, love…" autocomplete="off" autocapitalize="off"><button type="button" class="secondary" data-action="strongsClear">Clear</button></div>
-    <select id="strongsLang" aria-label="Language" style="margin-top:8px"><option value="both">Hebrew &amp; Greek</option><option value="H">Hebrew (Old Testament)</option><option value="G">Greek (New Testament)</option></select>
-    <div id="strongsResults" style="margin-top:10px"></div>
-  </div>
 </section>
 <div id="player" class="player" hidden><div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:center"><b>🎵 Music &amp; 🔊 Read aloud</b><button type="button" class="secondary" data-action="togglePlayer">Close</button></div>
@@ -457,7 +459,7 @@ function exportLessons(){
 
 function $(id){return document.getElementById(id)}
 function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800)}
-function showScreen(id){if(id==="strongs")strongsLoad();document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id));window.scrollTo({top:0,behavior:"smooth"})}
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id));window.scrollTo({top:0,behavior:"smooth"})}
 function renderDevotional(){const d=allDevotionals[devIndex%allDevotionals.length];$("devTitle").textContent=d.title;$("devText").textContent=d.text;$("devRef").textContent=d.ref;$("homeDevTitle").textContent=d.title;$("homeDevText").textContent=d.text}
 function renderDevotionals(){const box=$("devotionalGrid");if(!box)return;const custom=importedDevotionals;if(!custom.length){box.innerHTML='<p class="muted">No custom devotionals yet.</p>';return;}box.innerHTML=custom.map((d,i)=>'<div class="tile"><b>'+escapeHtml(d.title)+'</b><p class="muted">'+escapeHtml(d.series||d.ref)+'</p><p>'+escapeHtml(d.text)+'</p><button type="button" class="secondary" data-devotional="'+i+'">Open devotional</button></div>').join("");}
 function openVerse(ref){
@@ -552,7 +554,8 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
- const sg=e.target.closest("[data-strongs]");if(sg){e.preventDefault();strongsOpen(sg.dataset.strongs);return}
+ const cl=e.target.closest("[data-conc-letter]");if(cl){concLetter(cl.dataset.concLetter);return}
+ const cw=e.target.closest("[data-conc-word]");if(cw){concSearch(cw.dataset.concWord);return}
  const rr=e.target.closest("[data-readref]");if(rr){const [b,c]=rr.dataset.readref.split("|");showScreen("bible");if(bibleBookData[b]){$("bookSelect").value=b;populateChapters();$("chapterSelect").value=c;openChapter();}else toast("The Bible is still loading");return}
  const action=e.target.closest("[data-action]");if(!action)return;
  switch(action.dataset.action){
@@ -583,6 +586,8 @@ function handleTap(e){
   case"adminLogin":adminLogin();break;
   case"adminLogout":adminLogout();break;
   case"todayStudy":openLesson(DOY-1);break;
+  case"concSearch":concSearch();break;
+  case"concMore":concMore();break;
   case"togglePlayer":$("player").hidden=!$("player").hidden;break;
   case"speak":speakCurrent();break;
   case"speakPause":speechSynthesis.speaking&&(speechSynthesis.paused?speechSynthesis.resume():speechSynthesis.pause());break;
@@ -596,12 +601,49 @@ function handleTap(e){
   case"sacredOpen":sacredOpen();break;
   case"sacredLink":sacredLink();break;
   case"sacredRemove":sacredRemove();break;
-  case"strongsClear":strongsClear();break;
-  case"strongsRetry":strongsLoad();break;
   case"adminImportLesson":publishLessons($("adminLessonFile").files?.[0]);break;
   case"adminImportDevotional":publishDevotionals($("adminDevotionalFile").files?.[0]);break;
  }
 }
+let CONC=null,concRes=[],concShown=0,concRe=null;
+const OTSET=new Set(KJVA_ORDER.slice(0,39)),NTSET=new Set(KJVA_ORDER.slice(53));
+function concBuild(){
+  const key=TRANS+"|"+bibleVerses.length;if(CONC&&CONC.key===key)return CONC;
+  const idx=new Map();
+  bibleVerses.forEach((v,i)=>{const seen=new Map();(String(v.text).toLowerCase().match(/\p{L}[\p{L}'’-]*/gu)||[]).forEach(w=>{w=w.replace(/['’-]+$/,"");if(w)seen.set(w,(seen.get(w)||0)+1)});
+    seen.forEach((n,w)=>{let e=idx.get(w);if(!e){e={n:0,v:[]};idx.set(w,e)}e.n+=n;e.v.push(i)})});
+  return CONC={key,idx,words:[...idx.keys()].sort()};
+}
+function concHl(text){let out="",last=0;text.replace(concRe,(m,off)=>{out+=escapeHtml(text.slice(last,off))+"<mark>"+escapeHtml(m)+"</mark>";last=off+m.length;return m});return out+escapeHtml(text.slice(last));}
+function concSearch(w){
+  if(!bibleVerses.length){toast("The Bible is still loading");return}
+  const q=(w||$("concQ").value).trim().toLowerCase().replace(/[^\p{L}'’-]/gu,"");if(!q){toast("Type a word to search");return}
+  $("concQ").value=q;const C=concBuild(),pre=$("concForms").checked,grp=$("concGroup").value;
+  const forms=pre?C.words.filter(x=>x.startsWith(q)):(C.idx.has(q)?[q]:[]),set=new Set();
+  forms.forEach(f=>C.idx.get(f).v.forEach(i=>set.add(i)));
+  const esc=q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  concRe=new RegExp(pre?"(?<![\\p{L}])"+esc+"[\\p{L}'’-]*":"(?<![\\p{L}'’-])"+esc+"(?![\\p{L}'’-])","giu");
+  concRes=[...set].sort((a,b)=>a-b).filter(i=>grp==="all"||(grp==="ot"?OTSET:NTSET).has(bibleVerses[i].book));
+  let total=0;const byBook=new Map();
+  concRes.forEach(i=>{const v=bibleVerses[i],n=(v.text.match(concRe)||[]).length;total+=n;byBook.set(v.book,(byBook.get(v.book)||0)+n)});
+  const top=[...byBook].sort((a,b)=>b[1]-a[1]).slice(0,12).map(([b,n])=>'<span class="pill" style="margin:3px">'+escapeHtml(b)+' · '+n+'</span>').join("");
+  const o=$("concOut");o.hidden=false;concShown=0;
+  o.innerHTML='<h2>“'+escapeHtml(q)+(pre?"…":"")+'”</h2><p class="muted">'+(concRes.length?total.toLocaleString()+" times in "+concRes.length.toLocaleString()+" verses":"No verses found. Try Include word endings, or another spelling.")+'</p><div>'+top+'</div><div id="concRows"></div><div id="concMoreBox"></div>';
+  concMore();o.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function concMore(){
+  const rows=$("concRows");if(!rows)return;
+  concRes.slice(concShown,concShown+40).forEach(i=>{const v=bibleVerses[i];rows.insertAdjacentHTML("beforeend",'<div class="verseRow"><b>'+escapeHtml(v.ref)+'</b> '+concHl(String(v.text))+' <button type="button" class="secondary" data-ref="'+escapeHtml(v.ref)+'">Open</button></div>')});
+  concShown=Math.min(concRes.length,concShown+40);
+  $("concMoreBox").innerHTML=concShown<concRes.length?'<button type="button" class="secondary" data-action="concMore">Show more ('+(concRes.length-concShown)+' left)</button>':"";
+}
+function concLetter(L){
+  if(!bibleVerses.length){toast("The Bible is still loading");return}
+  const C=concBuild(),all=C.words.filter(w=>w[0]===L),ws=all.slice(0,600);
+  $("concWords").innerHTML=ws.map(w=>'<button type="button" class="secondary chipbtn" data-conc-word="'+escapeHtml(w)+'">'+escapeHtml(w)+' <small>'+C.idx.get(w).n+'</small></button>').join("")+(all.length>600?'<p class="muted">Showing the first 600 of '+all.length+' words. Type in the search box to narrow.</p>':"");
+}
+$("concLetters").innerHTML="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(l=>'<button type="button" class="secondary chipbtn" data-conc-letter="'+l.toLowerCase()+'">'+l+'</button>').join("");
+$("concQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();concSearch()}});
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");
@@ -653,6 +695,9 @@ function musicAddLink(){
 $("musicFiles")?.addEventListener("change",e=>{[...e.target.files].forEach(f=>tracks.push({name:f.name.replace(/\.[^.]+$/,""),url:URL.createObjectURL(f),kind:"audio",temp:true}));e.target.value="";renderTracks();if(cur<0&&tracks.length)playTrack(0);});
 $("audioEl")?.addEventListener("ended",()=>{if(tracks.length)playTrack((cur+1)%tracks.length)});
 try{tracks=JSON.parse(localStorage.getItem("bpm_music")||"[]")}catch(_){tracks=[]}
+const FEATURED_YT="https://www.youtube.com/embed/Aw4Aghpvwjo?playsinline=1";
+if(!tracks.some(t=>(t.url||"").includes("Aw4Aghpvwjo")))tracks.unshift({name:"Featured song (YouTube)",url:FEATURED_YT,kind:"embed"});
+saveTracks();renderTracks();
 if(canSpeak()){fillVoices();speechSynthesis.onvoiceschanged=fillVoices;}
 renderTracks();
 const HYMNS={"title": "Public-domain hymns", "chapters": [{"chapter": 1, "title": "Amazing Grace", "verses": [{"verse": 1, "text": "Amazing grace! how sweet the sound,\nThat saved a wretch like me!\nI once was lost, but now am found;\nWas blind, but now I see."}, {"verse": 2, "text": "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;\nHow precious did that grace appear\nThe hour I first believed."}, {"verse": 3, "text": "Through many dangers, toils and snares,\nI have already come;\n'Tis grace hath brought me safe thus far,\nAnd grace will lead me home."}]}, {"chapter": 2, "title": "What a Friend We Have in Jesus", "verses": [{"verse": 1, "text": "What a friend we have in Jesus,\nAll our sins and griefs to bear!\nWhat a privilege to carry\nEverything to God in prayer!"}, {"verse": 2, "text": "Have we trials and temptations?\nIs there trouble anywhere?\nWe should never be discouraged—\nTake it to the Lord in prayer."}]}, {"chapter": 3, "title": "Blessed Assurance", "verses": [{"verse": 1, "text": "Blessed assurance, Jesus is mine!\nO what a foretaste of glory divine!\nHeir of salvation, purchase of God,\nBorn of His Spirit, washed in His blood."}]}, {"chapter": 4, "title": "It Is Well with My Soul", "verses": [{"verse": 1, "text": "When peace, like a river, attendeth my way,\nWhen sorrows like sea billows roll;\nWhatever my lot, Thou hast taught me to say,\nIt is well, it is well with my soul."}]}, {"chapter": 5, "title": "Just As I Am", "verses": [{"verse": 1, "text": "Just as I am, without one plea,\nBut that Thy blood was shed for me,\nAnd that Thou bidd'st me come to Thee,\nO Lamb of God, I come, I come."}]}, {"chapter": 6, "title": "Rock of Ages", "verses": [{"verse": 1, "text": "Rock of Ages, cleft for me,\nLet me hide myself in Thee;\nLet the water and the blood,\nFrom Thy wounded side which flowed,\nBe of sin the double cure;\nSave from wrath and make me pure."}]}, {"chapter": 7, "title": "Swing Low, Sweet Chariot", "verses": [{"verse": 1, "text": "Swing low, sweet chariot,\nComing for to carry me home;\nSwing low, sweet chariot,\nComing for to carry me home."}, {"verse": 2, "text": "I looked over Jordan, and what did I see,\nComing for to carry me home?\nA band of angels coming after me,\nComing for to carry me home."}]}]};
@@ -727,56 +772,6 @@ function sacredOpen(){
   card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function sacredRemove(){const e=sacredEntry();if(!sacredGet(e.id)||!confirm("Remove "+e.name+" from this device?"))return;localStorage.removeItem(sacredKey(e.id));const k=e.id;sacredInit();$("sacredSelect").value=k;sacredRefresh();}
-/* ---- Strong's Concordance ---- */
-let strongsData=null,strongsIdx=[],strongsBusy=false;
-const strongsNorm=x=>String(x||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f\u0591-\u05c7]/g,"");
-async function strongsLoad(){
-  if(strongsData||strongsBusy)return;
-  strongsBusy=true;const st=$("strongsStatus");st.textContent="Loading concordance…";
-  try{
-    const r=await fetch("./strongs.json");if(!r.ok)throw new Error("HTTP "+r.status);
-    strongsData=await r.json();strongsIdx=[];
-    for(const l of["H","G"])for(const n in(strongsData[l]||{})){const e=strongsData[l][n];strongsIdx.push({l,n,t:strongsNorm(e.t),g:strongsNorm(e.l),h:strongsNorm((e.l||"")+" "+(e.t||"")+" "+(e.p||"")+" "+(e.d||""))});}
-    st.textContent="Loaded "+strongsIdx.length.toLocaleString()+" entries.";
-    if($("strongsQ").value.trim())strongsSearch();
-  }catch(err){strongsData=null;st.innerHTML='Could not load strongs.json (keep it next to index.html). <button type="button" class="secondary" data-action="strongsRetry">Retry</button>';}
-  strongsBusy=false;
-}
-function strongsLinks(text,l){
-  return escapeHtml(text||"").replace(/\b([HG])0*(\d{1,4})\b/g,(m,k,n)=>strongsData?.[k]?.[n]?'<a href="#" data-strongs="'+k+n+'">'+m+'</a>':m);
-}
-function strongsEntry(l,n){
-  const e=strongsData?.[l]?.[n];if(!e)return"";
-  return '<div class="result"><span class="pill">'+(l==="H"?"Hebrew":"Greek")+" "+l+n+'</span> '+(e.l?'<span lang="'+(l==="H"?"he":"el")+'" style="font-size:1.35em;margin-right:6px">'+escapeHtml(e.l)+'</span>':"")+'<b>'+escapeHtml(e.t||"")+'</b>'+(e.p?' <span class="muted">· '+escapeHtml(e.p)+'</span>':"")+'<p style="margin:8px 0 0;line-height:1.6">'+strongsLinks(e.d,l)+'</p></div>';
-}
-function strongsSearch(){
-  const box=$("strongsResults"),q=$("strongsQ").value.trim();
-  if(!strongsData){strongsLoad();return}
-  if(!q){box.innerHTML="";return}
-  const sel=$("strongsLang").value,langs=sel==="both"?["H","G"]:[sel];
-  const m=q.match(/^([hg])?\s*0*(\d{1,4})$/i);
-  if(m){
-    const ls=m[1]?[m[1].toUpperCase()]:langs;
-    box.innerHTML=ls.map(l=>strongsEntry(l,m[2])).join("")||'<p class="muted">No entry found for that number.</p>';
-    return;
-  }
-  const t=strongsNorm(q),hits=[];
-  for(const x of strongsIdx){
-    if(!langs.includes(x.l))continue;
-    const rank=(x.t===t||x.g===t)?0:(x.t.startsWith(t)||x.g.startsWith(t))?1:(x.t.includes(t)||x.g.includes(t))?2:x.h.includes(t)?3:9;
-    if(rank<9)hits.push({x,rank});
-  }
-  hits.sort((a,b)=>a.rank-b.rank||(a.x.l<b.x.l?-1:a.x.l>b.x.l?1:Number(a.x.n)-Number(b.x.n)));
-  box.innerHTML=hits.length?hits.slice(0,40).map(h=>strongsEntry(h.x.l,h.x.n)).join("")+(hits.length>40?'<p class="muted">Showing 40 of '+hits.length+' matches — narrow your search.</p>':""):'<p class="muted">No matches.</p>';
-}
-function strongsOpen(code){
-  showScreen("strongs");$("strongsLang").value="both";$("strongsQ").value=code;
-  strongsSearch();$("strongsResults").scrollIntoView({behavior:"smooth",block:"start"});
-}
-function strongsClear(){$("strongsQ").value="";$("strongsResults").innerHTML="";}
-$("strongsQ")?.addEventListener("input",()=>{clearTimeout(window.__sq);window.__sq=setTimeout(strongsSearch,250)});
-$("strongsQ")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();strongsSearch();}});
-$("strongsLang")?.addEventListener("change",strongsSearch);
 document.addEventListener("click",handleTap);
 document.addEventListener("touchend",handleTap,{passive:true});
 $("search")?.addEventListener("input",search);

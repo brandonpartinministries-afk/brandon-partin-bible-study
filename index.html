@@ -43,6 +43,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .fday{width:auto;min-height:44px;padding:2px;border-radius:8px;font-size:.95rem;border:1px solid rgba(128,128,128,.25);background:transparent;color:inherit}
 .fday.today{outline:2px solid #3b82f6}.fday.empty{border:0;visibility:hidden}
 .fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
+.srmPlayer iframe,.srmPlayer video{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}.srmPlayer audio{width:100%}
 mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}
 .chipbtn{width:auto;display:inline-block;min-height:34px;padding:4px 10px;margin:3px;font-size:.85rem}
 </style>
@@ -82,6 +83,9 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="bible">Bible</button>
     <button type="button" data-screen="concordance">Concordance</button>
     <button type="button" data-screen="feasts">Feasts</button>
+    <button type="button" data-screen="sermons">Sermons</button>
+    <button type="button" data-screen="prayer">Prayer</button>
+    <button type="button" data-screen="give">Give</button>
     <button type="button" data-screen="studies">Studies</button>
     <button type="button" data-action="togglePlayer">🎵 Listen</button>
     <button type="button" data-screen="sacred">Sacred Texts</button>
@@ -170,6 +174,20 @@ body.light .toast{background:#172033;color:#fff}
         <div class="tile"><b>📖 Bible Study Lessons</b><p class="muted">Upload one lesson or a JSON collection. Imported lessons are published to the cloud database.</p><input id="adminLessonFile" type="file" accept=".json,.txt,.json.txt"><button type="button" class="primary" data-action="adminImportLesson" style="margin-top:10px">Publish lesson(s)</button></div>
         <div class="tile"><b>🌅 Devotionals</b><p class="muted">Upload one devotional or a devotional series and publish it for users.</p><input id="adminDevotionalFile" type="file" accept=".json,.txt,.json.txt"><button type="button" class="primary" data-action="adminImportDevotional" style="margin-top:10px">Publish devotional(s)</button></div>
       </div>
+      <div class="card"><h2>🎥 Publish a sermon</h2><p class="muted">Paste a YouTube link, or upload an audio or video file (the free Supabase plan allows files up to about 50 MB).</p><div class="stack">
+        <input id="srmTitle" placeholder="Sermon title"><input id="srmSpeaker" placeholder="Speaker (optional)"><input id="srmDate" type="date"><textarea id="srmDesc" rows="3" placeholder="Short description (optional)"></textarea>
+        <input id="srmLink" placeholder="YouTube link"><label class="muted">Or upload a file</label><input id="srmFile" type="file" accept="audio/*,video/*">
+        <button type="button" class="primary" data-action="sermonPublish">Publish sermon</button></div></div>
+      <div class="card"><h2>⚙️ Site settings</h2><p class="muted">These show up for everyone once the setup file has been run in Supabase.</p><div class="stack">
+        <label class="muted">Prayer request email</label><input id="setEmail" type="email" placeholder="name@example.com">
+        <label class="muted">YouTube channel link</label><input id="setChannel" placeholder="https://www.youtube.com/@yourchannel">
+        <label class="muted">Donation link (PayPal, Stripe, Givelify, Tithe.ly, etc.)</label><input id="setDonateUrl" placeholder="https://...">
+        <label class="muted">Donate button words</label><input id="setDonateLabel" placeholder="Give now">
+        <label class="muted">Other ways to give (optional)</label><textarea id="setGiveNotes" rows="3" placeholder="Mail checks to ... / Cash App ..."></textarea>
+        <button type="button" class="primary" data-action="adminSaveSite">Save settings</button></div></div>
+      <div class="card"><h2>🏦 Giving and bank payouts</h2><p class="muted">A website cannot safely connect to a bank on its own. The bank is connected inside your giving provider, which deposits gifts into your account. Link it in their dashboard, then keep a shortcut here. Never type account or routing numbers into this app.</p><div class="stack">
+        <input id="setProcessor" placeholder="Giving provider (for example PayPal or Stripe)"><input id="setBank" placeholder="Bank name (label only)"><input id="setPayoutUrl" placeholder="Provider dashboard link to manage the bank connection">
+        <button type="button" class="primary" data-action="adminSavePayout">Save</button><button type="button" class="secondary" data-action="openPayout">Open provider dashboard</button></div></div>
       <div class="card"><h2>Published content</h2><div id="adminContentList" class="stack"></div></div>
       <button type="button" class="secondary" data-action="adminLogout">Sign out</button>
     </div>
@@ -218,6 +236,29 @@ body.light .toast{background:#172033;color:#fff}
   </div>
   <div id="feastDetail" class="card"></div>
   <div class="card"><h2 id="feastListTitle">Dates this year</h2><div id="feastList"></div></div>
+</section>
+<section id="sermons" class="screen">
+  <div class="card"><span class="pill">🎥 Sermons</span><h1>Sermons</h1><p class="muted">Watch or listen to messages from Brandon Partin Ministries.</p>
+    <button type="button" class="primary" id="srmChannel" data-action="openChannel" hidden>▶ Watch on YouTube</button></div>
+  <div id="srmList"></div>
+</section>
+<section id="prayer" class="screen">
+  <div class="card"><span class="pill">🙏 Prayer</span><h1>Prayer Requests</h1>
+    <p class="muted">Share a request and it will be sent by email to <b id="prayerTo"></b>. Your email app opens with everything filled in, and you press Send. For an emergency, call 911.</p>
+    <div class="stack"><input id="prayName" placeholder="Your name (optional)"><input id="prayContact" placeholder="Email or phone if you want a reply (optional)">
+    <textarea id="prayText" rows="6" placeholder="How can we pray for you?"></textarea>
+    <label style="display:flex;align-items:center;gap:8px"><input id="prayShare" type="checkbox" style="width:auto">It is okay to share this with the prayer team</label>
+    <button type="button" class="primary" data-action="prayerSend">📧 Send prayer request</button>
+    <button type="button" class="secondary" data-action="prayerCopy">Copy request text</button></div>
+    <a id="prayerLink" hidden></a></div>
+</section>
+<section id="give" class="screen">
+  <div class="card"><span class="pill">💝 Giving</span><h1>Tithes &amp; Offerings</h1>
+    <p>“Bring ye all the tithes into the storehouse.” (Malachi 3:10, KJV)</p>
+    <p class="muted">If you would like to support the work of this ministry, you can give securely online. Every gift helps us share the Word and serve people. You are taken to our giving provider, and this app never sees or stores your card or bank details.</p>
+    <button type="button" class="primary" id="giveBtn" data-action="giveNow">💝 Give now</button>
+    <p id="giveNotes" class="muted" style="white-space:pre-wrap" hidden></p>
+    <p id="giveSetup" class="muted" hidden>Administrator: the giving link is not set yet. Add it under Admin, Site settings.</p></div>
 </section>
 <section id="sacred" class="screen">
   <div class="card"><span class="pill">📜 Sacred texts</span><h1>Sacred Texts Library</h1>
@@ -376,7 +417,7 @@ async function checkAdmin(){
   const {data,error}=await supabaseClient.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
   isAdmin=!!data&&!error; updateAdminUI(); return isAdmin;
 }
-function updateAdminUI(){const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=false;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
+function updateAdminUI(){if(isAdmin&&!window._setAdm){window._setAdm=1;setTimeout(()=>{loadSettings();loadSermons()},0)}if(!isAdmin)window._setAdm=0;const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=false;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
 async function adminLogin(){
  if(!supabaseClient){toast("Supabase is not configured yet");return;}
  const email=$("adminEmail").value.trim(),password=$("adminPassword").value;
@@ -570,6 +611,8 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const sp=e.target.closest("[data-sermon-play]");if(sp){sermonPlay(+sp.dataset.sermonPlay);return}
+ const sdl=e.target.closest("[data-sermon-del]");if(sdl){sermonDelete(+sdl.dataset.sermonDel);return}
  const fd=e.target.closest("[data-fday]");if(fd){feastPick(fd.dataset.fday);return}
  const cl=e.target.closest("[data-conc-letter]");if(cl){concLetter(cl.dataset.concLetter);return}
  const cw=e.target.closest("[data-conc-word]");if(cw){concSearch(cw.dataset.concWord);return}
@@ -604,6 +647,14 @@ function handleTap(e){
   case"adminLogout":adminLogout();break;
   case"todayStudy":openLesson(DOY-1);break;
   case"concSearch":concSearch();break;
+  case"prayerSend":prayerSend();break;
+  case"prayerCopy":prayerCopy();break;
+  case"giveNow":{const u=safeUrl(SETTINGS.donateUrl);if(!u){toast("The giving link has not been set up yet");break}window.open(u,"_blank","noopener");break}
+  case"openChannel":{const u=safeUrl(SETTINGS.youtubeChannel);if(u)window.open(u,"_blank","noopener");break}
+  case"openPayout":{const u=safeUrl(SETTINGS.admin_payoutUrl);if(!u){toast("Add and save a dashboard link first");break}window.open(u,"_blank","noopener");break}
+  case"sermonPublish":sermonPublish();break;
+  case"adminSaveSite":adminSaveSite();break;
+  case"adminSavePayout":adminSavePayout();break;
   case"feastPrev":feastMove(-1);break;
   case"feastNext":feastMove(1);break;
   case"feastToday":{const n=new Date();feastY=n.getFullYear();feastM=n.getMonth();feastRender();feastDetailShow();break}
@@ -667,6 +718,7 @@ $("concQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault()
 const FEASTS=[
 {id:"pass",c:"#c0392b",name:"Passover (Pesach)",m:"nis",d1:14,d2:14,ref:"Exodus 12; Leviticus 23:5; 1 Corinthians 5:7",desc:"Passover remembers the night God delivered Israel from Egypt. The blood of the lamb on the doorposts marked each house, and the judgment passed over it. It is kept at the start of the first month, on the 14th of Nisan, beginning at twilight. Many believers see in the lamb a picture of Messiah, the Lamb of God who takes away the sin of the world."},
 {id:"ub",c:"#d68910",name:"Feast of Unleavened Bread",m:"nis",d1:15,d2:21,ref:"Exodus 12:15-20; Leviticus 23:6-8",desc:"Seven days, beginning the day after Passover, in which no leaven is eaten and none is kept in the house. Bread without leaven recalls Israel leaving Egypt in haste. Leaven is often taken as a picture of sin and pride, so the week is a time of searching the heart and walking in sincerity and truth. The first and seventh days are holy convocations, set apart from ordinary work."},
+{id:"first",c:"#6c9a1f",name:"Feast of Firstfruits",m:"nis",d1:16,d2:16,ref:"Leviticus 23:9-14; 1 Corinthians 15:20-23",desc:"On the day after the Sabbath during Unleavened Bread, the first sheaf of the barley harvest was waved before the Lord, and the fifty-day count to Pentecost began. It thanks God for the harvest and trusts Him for the rest. Believers connect it with the resurrection of Messiah, the firstfruits of those who have died. Note: the date shown is 16 Nisan. Some traditions count from the Sunday after the weekly Sabbath inside the feast, so follow your own tradition if it differs."},
 {id:"pent",c:"#2e86c1",name:"Pentecost (Shavuot, Feast of Weeks)",m:"siv",d1:6,d2:6,ref:"Leviticus 23:15-21; Deuteronomy 16:9-12; Acts 2",desc:"Pentecost comes fifty days after the Feast of Firstfruits and celebrates the wheat harvest, with an offering of two loaves. Jewish tradition also links it to the giving of the Torah at Sinai. In the New Testament the Holy Spirit was poured out on the believers in Jerusalem on this day. Note: the date shown is the common 6 Sivan. Some traditions count the fifty days from the Sunday within Unleavened Bread, which can land on a different day, so follow your own tradition if it differs."},
 {id:"trump",c:"#8e44ad",name:"Feast of Trumpets (Yom Teruah)",m:"tis",d1:1,d2:1,ref:"Leviticus 23:23-25; Numbers 29:1-6",desc:"The first day of the seventh month is a day of blowing trumpets, a holy convocation with no ordinary work. It is a call to wake up, to turn back to God, and to prepare for the Day of Atonement ten days later. Many see in it a picture of the gathering of God's people and of the trumpet sounding at the return of Messiah. In Jewish custom it is also called Rosh Hashanah, the head of the year."},
 {id:"atone",c:"#566573",name:"Day of Atonement (Yom Kippur)",m:"tis",d1:10,d2:10,ref:"Leviticus 16; Leviticus 23:26-32; Hebrews 9-10",desc:"The most solemn day of the year, on the tenth day of the seventh month. God's people are to humble themselves, which is commonly kept as a fast, and to rest completely from work. In Israel's worship the high priest made atonement for the people and for the sanctuary. Believers see this fulfilled in Messiah as our High Priest, who made a once-for-all atonement for sin."},
@@ -705,6 +757,88 @@ function feastRender(){
 $("feastDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
 $("feastLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("");
 feastRender();feastDetailShow();
+const SET_DEF={prayerEmail:"brandonpartinministries@gmail.com",youtubeChannel:"",donateUrl:"",donateLabel:"Give now",giveNotes:"",admin_processor:"",admin_bankName:"",admin_payoutUrl:""};
+let SETTINGS=Object.assign({},SET_DEF),SERMONS=[];
+const safeUrl=u=>{u=String(u||"").trim();return /^https?:\/\//i.test(u)?u:""};
+const ytId=u=>{const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/);return m?m[1]:null};
+function applySettings(){
+  const S=SETTINGS;$("prayerTo").textContent=S.prayerEmail;
+  $("giveBtn").textContent="💝 "+(S.donateLabel||"Give now");
+  $("giveNotes").textContent=S.giveNotes||"";$("giveNotes").hidden=!S.giveNotes;
+  $("giveSetup").hidden=!(isAdmin&&!safeUrl(S.donateUrl));
+  $("srmChannel").hidden=!safeUrl(S.youtubeChannel);
+  [["setEmail","prayerEmail"],["setChannel","youtubeChannel"],["setDonateUrl","donateUrl"],["setDonateLabel","donateLabel"],["setGiveNotes","giveNotes"],["setProcessor","admin_processor"],["setBank","admin_bankName"],["setPayoutUrl","admin_payoutUrl"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=S[k]||""});
+}
+async function loadSettings(){
+  try{Object.assign(SETTINGS,JSON.parse(localStorage.getItem("bpm_settings")||"{}"))}catch(_){}
+  if(supabaseClient){try{const {data,error}=await supabaseClient.from("site_settings").select("key,value");if(!error&&data){data.forEach(r=>{if(r.key in SET_DEF)SETTINGS[r.key]=r.value||""});try{localStorage.setItem("bpm_settings",JSON.stringify(SETTINGS))}catch(_){}}}catch(_){}}
+  applySettings();
+}
+async function saveSettings(obj){
+  Object.assign(SETTINGS,obj);try{localStorage.setItem("bpm_settings",JSON.stringify(SETTINGS))}catch(_){}
+  let ok=false;
+  if(supabaseClient&&isAdmin){const {error}=await supabaseClient.from("site_settings").upsert(Object.entries(obj).map(([key,value])=>({key,value:String(value)})),{onConflict:"key"});ok=!error;if(error)console.warn(error.message)}
+  applySettings();toast(ok?"Saved for everyone":"Saved on this device only. Run bpm-setup.sql in Supabase to save for everyone.");
+}
+function adminSaveSite(){
+  const email=$("setEmail").value.trim(),ch=$("setChannel").value.trim(),du=$("setDonateUrl").value.trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast("Enter a valid prayer email");return}
+  if(ch&&!safeUrl(ch)){toast("The YouTube link must start with https://");return}
+  if(du&&!safeUrl(du)){toast("The donation link must start with https://");return}
+  saveSettings({prayerEmail:email,youtubeChannel:ch,donateUrl:du,donateLabel:$("setDonateLabel").value.trim()||"Give now",giveNotes:$("setGiveNotes").value.trim()});
+}
+function adminSavePayout(){
+  const u=$("setPayoutUrl").value.trim();if(u&&!safeUrl(u)){toast("The dashboard link must start with https://");return}
+  saveSettings({admin_processor:$("setProcessor").value.trim(),admin_bankName:$("setBank").value.trim(),admin_payoutUrl:u});
+}
+function prayerBuild(){
+  const n=$("prayName").value.trim(),c=$("prayContact").value.trim(),r=$("prayText").value.trim(),sh=$("prayShare").checked;
+  const body="Prayer request\n\nFrom: "+(n||"(name not given)")+"\nContact: "+(c||"(none given)")+"\nOk to share with the prayer team: "+(sh?"Yes":"No")+"\n\n"+r;
+  return {r,body,url:"mailto:"+SETTINGS.prayerEmail+"?subject="+encodeURIComponent("Prayer request"+(n?" from "+n:""))+"&body="+encodeURIComponent(body)};
+}
+function prayerSend(){const b=prayerBuild();if(!b.r){toast("Please write your request first");return}const a=$("prayerLink");a.href=b.url;a.click();toast("Opening your email app")}
+function prayerCopy(){const b=prayerBuild();if(!b.r){toast("Please write your request first");return}(navigator.clipboard?navigator.clipboard.writeText(b.body):Promise.reject()).then(()=>toast("Copied. Paste it into an email to "+SETTINGS.prayerEmail),()=>toast("Could not copy. Use Send instead."))}
+async function loadSermons(){
+  let rows=null;
+  if(supabaseClient){try{const {data,error}=await supabaseClient.from("sermons").select("*").eq("published",true).order("sermon_date",{ascending:false}).order("created_at",{ascending:false});if(!error&&data)rows=data}catch(_){}}
+  if(!rows){try{rows=JSON.parse(localStorage.getItem("bpm_sermons")||"[]")}catch(_){rows=[]}}
+  SERMONS=rows;renderSermons();
+}
+function renderSermons(){
+  const box=$("srmList");
+  box.innerHTML=SERMONS.length?SERMONS.map((x,i)=>'<div class="card"><b>'+escapeHtml(x.title)+'</b><div class="muted">'+escapeHtml([x.speaker,x.sermon_date?new Date(x.sermon_date+"T12:00:00").toLocaleDateString():""].filter(Boolean).join(" · "))+'</div>'+(x.description?'<p>'+escapeHtml(x.description)+'</p>':'')+'<div class="srmPlayer" id="srmP'+i+'"></div><button type="button" class="primary" data-sermon-play="'+i+'">▶ Play</button>'+(isAdmin?' <button type="button" class="secondary" data-sermon-del="'+i+'">Delete</button>':'')+'</div>').join(""):'<div class="card"><p class="muted">No sermons have been posted yet. Please check back soon.</p></div>';
+}
+function sermonPlay(i){
+  const x=SERMONS[i],el=$("srmP"+i);if(!x||!el)return;const u=safeUrl(x.url);if(!u)return;
+  el.innerHTML=x.kind==="youtube"?'<iframe src="'+escapeHtml(u)+'" allow="accelerometer;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>':x.kind==="audio"?'<audio controls autoplay src="'+escapeHtml(u)+'"></audio>':'<video controls playsinline autoplay src="'+escapeHtml(u)+'"></video>';
+}
+async function sermonDelete(i){
+  const x=SERMONS[i];if(!x||!isAdmin||!confirm("Delete this sermon?"))return;
+  if(x.id&&supabaseClient){const {error}=await supabaseClient.from("sermons").delete().eq("id",x.id);if(error){toast(error.message);return}}
+  else{SERMONS.splice(i,1);try{localStorage.setItem("bpm_sermons",JSON.stringify(SERMONS))}catch(_){}}
+  toast("Sermon deleted");loadSermons();
+}
+async function sermonPublish(){
+  if(!isAdmin){toast("Sign in as an administrator first");return}
+  const title=$("srmTitle").value.trim(),link=$("srmLink").value.trim(),file=$("srmFile").files[0];
+  if(!title||(!link&&!file)){toast("Add a title and a YouTube link or a file");return}
+  let kind,url;
+  if(link){const id=ytId(link);if(!id){toast("That does not look like a YouTube link");return}kind="youtube";url="https://www.youtube.com/embed/"+id+"?playsinline=1"}
+  else{
+    toast("Uploading. Keep this page open.");
+    const ext=((file.name.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,""))||"bin",path=Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+    const {error}=await supabaseClient.storage.from("sermons").upload(path,file,{contentType:file.type||undefined});
+    if(error){toast("Upload failed: "+error.message);return}
+    url=supabaseClient.storage.from("sermons").getPublicUrl(path).data.publicUrl;kind=(file.type||"").startsWith("audio")?"audio":"video";
+  }
+  const row={title,speaker:$("srmSpeaker").value.trim()||null,sermon_date:$("srmDate").value||null,description:$("srmDesc").value.trim()||null,kind,url,published:true};
+  const {error}=await supabaseClient.from("sermons").insert(row);
+  if(error){toast("Could not publish: "+error.message+" (run bpm-setup.sql in Supabase)");return}
+  ["srmTitle","srmSpeaker","srmDate","srmDesc","srmLink","srmFile"].forEach(id=>$(id).value="");
+  toast("Sermon published");loadSermons();
+}
+document.querySelector("[data-screen=sermons]")?.addEventListener("click",()=>loadSermons());
+loadSettings();loadSermons();
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

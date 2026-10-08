@@ -38,6 +38,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .player iframe{width:100%;height:232px;border:0;border-radius:12px;margin-top:8px}.player audio{width:100%}
 .trk{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}.trk b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .verseRow.speaking{background:#1d4e8855;border-radius:8px}
+.fgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.fdow{text-align:center;font-size:.75rem;opacity:.7}
+.fday{width:auto;min-height:44px;padding:2px;border-radius:8px;font-size:.95rem;border:1px solid rgba(128,128,128,.25);background:transparent;color:inherit}
+.fday.today{outline:2px solid #3b82f6}.fday.empty{border:0;visibility:hidden}
+.fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
 mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}
 .chipbtn{width:auto;display:inline-block;min-height:34px;padding:4px 10px;margin:3px;font-size:.85rem}
 </style>
@@ -76,6 +81,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="home" class="active">Home</button>
     <button type="button" data-screen="bible">Bible</button>
     <button type="button" data-screen="concordance">Concordance</button>
+    <button type="button" data-screen="feasts">Feasts</button>
     <button type="button" data-screen="studies">Studies</button>
     <button type="button" data-action="togglePlayer">🎵 Listen</button>
     <button type="button" data-screen="sacred">Sacred Texts</button>
@@ -202,6 +208,16 @@ body.light .toast{background:#172033;color:#fff}
     <div id="concLetters" style="margin-top:10px"></div><div id="concWords"></div>
   </div>
   <div id="concOut" class="card" hidden></div>
+</section>
+<section id="feasts" class="screen">
+  <div class="card"><span class="pill">📅 Feast Calendar</span><h1>The Feasts of the Lord</h1>
+    <p class="muted">The appointed times of Leviticus 23, placed on the calendar for the year you are viewing. Each feast begins at sundown on the evening before the date shown. Tap a colored day to read about it.</p>
+    <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><button type="button" class="secondary chipbtn" data-action="feastPrev" aria-label="Previous month">‹</button><b id="feastTitle" style="flex:1;text-align:center"></b><button type="button" class="secondary chipbtn" data-action="feastNext" aria-label="Next month">›</button><button type="button" class="secondary chipbtn" data-action="feastToday">Today</button></div>
+    <div id="feastDow" class="fgrid"></div><div id="feastGrid" class="fgrid"></div>
+    <div id="feastLegend" style="margin-top:10px"></div>
+  </div>
+  <div id="feastDetail" class="card"></div>
+  <div class="card"><h2 id="feastListTitle">Dates this year</h2><div id="feastList"></div></div>
 </section>
 <section id="sacred" class="screen">
   <div class="card"><span class="pill">📜 Sacred texts</span><h1>Sacred Texts Library</h1>
@@ -554,6 +570,7 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const fd=e.target.closest("[data-fday]");if(fd){feastPick(fd.dataset.fday);return}
  const cl=e.target.closest("[data-conc-letter]");if(cl){concLetter(cl.dataset.concLetter);return}
  const cw=e.target.closest("[data-conc-word]");if(cw){concSearch(cw.dataset.concWord);return}
  const rr=e.target.closest("[data-readref]");if(rr){const [b,c]=rr.dataset.readref.split("|");showScreen("bible");if(bibleBookData[b]){$("bookSelect").value=b;populateChapters();$("chapterSelect").value=c;openChapter();}else toast("The Bible is still loading");return}
@@ -587,6 +604,9 @@ function handleTap(e){
   case"adminLogout":adminLogout();break;
   case"todayStudy":openLesson(DOY-1);break;
   case"concSearch":concSearch();break;
+  case"feastPrev":feastMove(-1);break;
+  case"feastNext":feastMove(1);break;
+  case"feastToday":{const n=new Date();feastY=n.getFullYear();feastM=n.getMonth();feastRender();feastDetailShow();break}
   case"concMore":concMore();break;
   case"togglePlayer":$("player").hidden=!$("player").hidden;break;
   case"speak":speakCurrent();break;
@@ -644,6 +664,47 @@ function concLetter(L){
 }
 $("concLetters").innerHTML="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(l=>'<button type="button" class="secondary chipbtn" data-conc-letter="'+l.toLowerCase()+'">'+l+'</button>').join("");
 $("concQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();concSearch()}});
+const FEASTS=[
+{id:"pass",c:"#c0392b",name:"Passover (Pesach)",m:"nis",d1:14,d2:14,ref:"Exodus 12; Leviticus 23:5; 1 Corinthians 5:7",desc:"Passover remembers the night God delivered Israel from Egypt. The blood of the lamb on the doorposts marked each house, and the judgment passed over it. It is kept at the start of the first month, on the 14th of Nisan, beginning at twilight. Many believers see in the lamb a picture of Messiah, the Lamb of God who takes away the sin of the world."},
+{id:"ub",c:"#d68910",name:"Feast of Unleavened Bread",m:"nis",d1:15,d2:21,ref:"Exodus 12:15-20; Leviticus 23:6-8",desc:"Seven days, beginning the day after Passover, in which no leaven is eaten and none is kept in the house. Bread without leaven recalls Israel leaving Egypt in haste. Leaven is often taken as a picture of sin and pride, so the week is a time of searching the heart and walking in sincerity and truth. The first and seventh days are holy convocations, set apart from ordinary work."},
+{id:"pent",c:"#2e86c1",name:"Pentecost (Shavuot, Feast of Weeks)",m:"siv",d1:6,d2:6,ref:"Leviticus 23:15-21; Deuteronomy 16:9-12; Acts 2",desc:"Pentecost comes fifty days after the Feast of Firstfruits and celebrates the wheat harvest, with an offering of two loaves. Jewish tradition also links it to the giving of the Torah at Sinai. In the New Testament the Holy Spirit was poured out on the believers in Jerusalem on this day. Note: the date shown is the common 6 Sivan. Some traditions count the fifty days from the Sunday within Unleavened Bread, which can land on a different day, so follow your own tradition if it differs."},
+{id:"trump",c:"#8e44ad",name:"Feast of Trumpets (Yom Teruah)",m:"tis",d1:1,d2:1,ref:"Leviticus 23:23-25; Numbers 29:1-6",desc:"The first day of the seventh month is a day of blowing trumpets, a holy convocation with no ordinary work. It is a call to wake up, to turn back to God, and to prepare for the Day of Atonement ten days later. Many see in it a picture of the gathering of God's people and of the trumpet sounding at the return of Messiah. In Jewish custom it is also called Rosh Hashanah, the head of the year."},
+{id:"atone",c:"#566573",name:"Day of Atonement (Yom Kippur)",m:"tis",d1:10,d2:10,ref:"Leviticus 16; Leviticus 23:26-32; Hebrews 9-10",desc:"The most solemn day of the year, on the tenth day of the seventh month. God's people are to humble themselves, which is commonly kept as a fast, and to rest completely from work. In Israel's worship the high priest made atonement for the people and for the sanctuary. Believers see this fulfilled in Messiah as our High Priest, who made a once-for-all atonement for sin."},
+{id:"tab",c:"#229954",name:"Feast of Tabernacles (Sukkot)",m:"tis",d1:15,d2:21,ref:"Leviticus 23:33-43; Deuteronomy 16:13-15; John 7",desc:"A joyful seven-day harvest festival beginning on the fifteenth of the seventh month. God's people live in temporary booths to remember how He sheltered Israel in the wilderness, and they rejoice before Him. The first day is a holy convocation. It looks ahead to the time when God will dwell with His people, and it is the feast Yeshua attended in John 7."},
+{id:"eighth",c:"#b7950b",name:"The Eighth Day, the Last Great Day",m:"tis",d1:22,d2:22,ref:"Leviticus 23:36; Numbers 29:35; John 7:37-38",desc:"The day right after Tabernacles, on the twenty-second of the seventh month, is a separate holy convocation, a solemn assembly with no ordinary work. John 7:37 calls it the last and great day of the feast, when Yeshua stood and invited anyone who was thirsty to come to Him and drink. Many see in it a picture of the completion of God's plan and the new beginning that follows."}];
+let feastY=new Date().getFullYear(),feastM=new Date().getMonth(),feastSel=null,feastCache={};
+function fkey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function feastYear(y){
+  if(feastCache[y])return feastCache[y];
+  const f=new Intl.DateTimeFormat("en-u-ca-hebrew",{month:"long",day:"numeric"}),map={},ranges={};
+  for(let i=0;i<366;i++){const d=new Date(y,0,1+i,12);if(d.getFullYear()!==y)break;
+    const ps=f.formatToParts(d),mo=((ps.find(p=>p.type==="month")||{}).value||"").toLowerCase().slice(0,3),dd=parseInt((ps.find(p=>p.type==="day")||{}).value,10);
+    FEASTS.forEach(F=>{if(mo===F.m&&dd>=F.d1&&dd<=F.d2){const k=fkey(d);(map[k]=map[k]||[]).push(F.id);(ranges[F.id]=ranges[F.id]||[]).push(d)}})}
+  return feastCache[y]={map,ranges};
+}
+const fdate=d=>d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+function feastDates(F,y){const r=feastYear(y).ranges[F.id]||[];if(!r.length)return"Date not available";return r.length>1?fdate(r[0])+" to "+fdate(r[r.length-1]):fdate(r[0])}
+function feastBlock(F,y){return '<div style="border-left:5px solid '+F.c+';padding-left:10px;margin:12px 0"><b>'+escapeHtml(F.name)+'</b><div class="muted">'+escapeHtml(feastDates(F,y))+'<br>Begins at sunset the evening before.</div><p>'+escapeHtml(F.desc)+'</p><p class="muted">'+escapeHtml(F.ref)+'</p></div>'}
+function feastDetailShow(id,y){
+  let F=FEASTS.find(x=>x.id===id),yy=y;
+  if(!F){const now=new Date(),kn=fkey(now);outer:for(const yr of [now.getFullYear(),now.getFullYear()+1]){for(const G of FEASTS){const r=feastYear(yr).ranges[G.id]||[];if(r.length&&fkey(r[r.length-1])>=kn){F=G;yy=yr;break outer}}}}
+  $("feastDetail").innerHTML=F?'<h2>'+(id?"":"Next feast")+'</h2>'+feastBlock(F,yy):"";
+}
+function feastPick(k){const y=+k.slice(0,4),ids=feastYear(y).map[k];feastSel=k;feastRender();if(ids&&ids.length){feastDetailShow(ids[0],y);$("feastDetail").scrollIntoView({behavior:"smooth",block:"nearest"})}}
+function feastMove(n){feastM+=n;if(feastM<0){feastM=11;feastY--}if(feastM>11){feastM=0;feastY++}feastRender()}
+function feastRender(){
+  const first=new Date(feastY,feastM,1),days=new Date(feastY,feastM+1,0).getDate(),map=feastYear(feastY).map,today=fkey(new Date());
+  $("feastTitle").textContent=first.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  let h="";for(let i=0;i<first.getDay();i++)h+='<button class="fday empty" tabindex="-1"></button>';
+  for(let d=1;d<=days;d++){const k=feastY+"-"+String(feastM+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),ids=map[k],F=ids&&FEASTS.find(x=>x.id===ids[0]);
+    h+='<button type="button" class="fday'+(k===today?" today":"")+(k===feastSel?" sel":"")+'" data-fday="'+k+'"'+(F?' style="background:'+F.c+';color:#fff" title="'+escapeHtml(F.name)+'"':"")+'>'+d+'</button>'}
+  $("feastGrid").innerHTML=h;
+  $("feastListTitle").textContent="Dates in "+feastY;
+  $("feastList").innerHTML=FEASTS.map(F=>feastBlock(F,feastY)).join("");
+}
+$("feastDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
+$("feastLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("");
+feastRender();feastDetailShow();
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

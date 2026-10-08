@@ -197,7 +197,8 @@ body.light .toast{background:#172033;color:#fff}
     <p id="sacredStatus" class="muted"></p>
     <div class="grid2" style="margin-bottom:10px"><button type="button" class="secondary" data-action="speak">🔊 Read aloud</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
     <div class="grid2"><button type="button" class="primary" data-action="sacredUpload">📥 Upload text</button><button type="button" class="secondary" data-action="sacredOnline">🌐 Load online</button></div>
-    <input id="sacredFile" type="file" accept=".json,.txt,.json.txt" hidden>
+    <input id="sacredFile" type="file" hidden>
+    <div style="display:flex;gap:8px;margin-top:10px"><input id="sacredLink" placeholder="Or paste a link to a .txt or .json file" style="flex:1;min-width:0"><button type="button" class="secondary" data-action="sacredLink">Load</button></div>
     <div id="sacredReader" hidden style="margin-top:12px"><select id="sacredChapter" aria-label="Choose chapter"></select>
       <div class="grid2" style="margin-top:10px"><button type="button" class="primary" data-action="sacredOpen">📖 Open</button><button type="button" class="danger" data-action="sacredRemove">Remove</button></div></div>
   </div>
@@ -523,10 +524,12 @@ let deferredInstall=null;window.addEventListener("beforeinstallprompt",e=>{e.pre
 async function installApp(){if(!deferredInstall){toast("On iPhone, use Share → Add to Home Screen.");return;}deferredInstall.prompt();deferredInstall=null;}
 function clearSearch(){$("search").value="";$('searchResults').innerHTML="";}
 let lastActionAt=0;
+let lastTouchEl=null;
 function handleTap(e){
  const now=Date.now();
  if(e.type==="touchend" && now-lastActionAt<500)return;
- if(e.type==="touchend")lastActionAt=now;
+ if(e.type==="click" && e.target===lastTouchEl && now-lastActionAt<800)return;
+ if(e.type==="touchend"){lastActionAt=now;lastTouchEl=e.target;}
 
  const nav=e.target.closest("[data-screen]");if(nav){showScreen(nav.dataset.screen);return}
  const ref=e.target.closest("[data-ref]");if(ref){openVerse(ref.dataset.ref);return}
@@ -579,12 +582,13 @@ function handleTap(e){
   case"sacredUpload":$("sacredFile").click();break;
   case"sacredOnline":sacredOnline();break;
   case"sacredOpen":sacredOpen();break;
+  case"sacredLink":sacredLink();break;
   case"sacredRemove":sacredRemove();break;
   case"adminImportLesson":publishLessons($("adminLessonFile").files?.[0]);break;
   case"adminImportDevotional":publishDevotionals($("adminDevotionalFile").files?.[0]);break;
  }
 }
-let spQ=[],spI=0,spOn=false,tracks=[],cur=-1;
+let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");
 function fillVoices(){const sel=$("voiceSel");if(!sel||!canSpeak())return;const v=speechSynthesis.getVoices();sel.innerHTML='<option value="">Automatic voice</option>'+v.map(x=>'<option value="'+escapeAttr(x.name)+'">'+escapeHtml(x.name+" ("+x.lang+")")+'</option>').join("");}
@@ -597,7 +601,10 @@ function speakCurrent(){
   else if(onScr("devotional")||onScr("home")){const d=allDevotionals[devIndex%allDevotionals.length];q.push({text:d.title+". "+d.text+" Scripture: "+d.ref+"."+(d.prayer?" Prayer. "+d.prayer:"")});}
   else if(onScr("studies")&&!$("lessonCard").hidden){q.push({text:$("lessonCard").innerText.replace(/Write reflection|Read in Bible/g,"")});}
   if(!q.length){toast("Open a chapter or devotional first");return}
-  speechSynthesis.cancel();spQ=q;spI=0;spOn=true;spNext();
+  if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
+  spQ=q;spI=0;spOn=true;spStarted=false;clearTimeout(spWatch);
+  spWatch=setTimeout(()=>{if(!spStarted)toast("No sound? Turn off silent mode, raise the volume, or pick another voice.")},3500);
+  spNext();
 }
 function spNext(){
   document.querySelectorAll(".verseRow.speaking").forEach(x=>x.classList.remove("speaking"));
@@ -605,7 +612,8 @@ function spNext(){
   if(spI>=spQ.length){spOn=false;if($("autoNext").checked&&onScr("bible")){chapterMove(1);setTimeout(speakCurrent,700);}return}
   const it=spQ[spI],u=new SpeechSynthesisUtterance(it.text);u.rate=Number($("speechRate").value)||1;
   const v=speechSynthesis.getVoices().find(x=>x.name===$("voiceSel").value);
-  if(v){u.voice=v;u.lang=v.lang}else{u.lang=TRANS_LIST[TRANS]?.lang||"en-US"}
+  if(v){u.voice=v;u.lang=v.lang}else{const l=TRANS_LIST[TRANS]?.lang;if(l&&!/^en/i.test(l))u.lang=l}
+  u.onstart=()=>{spStarted=true};(window.__utts=window.__utts||[]).push(u);if(window.__utts.length>40)window.__utts.shift();
   u.onend=()=>{spI++;spNext()};u.onerror=()=>{spI++;spNext()};
   if(it.el){it.el.classList.add("speaking");it.el.scrollIntoView({behavior:"smooth",block:"center"})}
   speechSynthesis.speak(u);
@@ -633,7 +641,8 @@ $("audioEl")?.addEventListener("ended",()=>{if(tracks.length)playTrack((cur+1)%t
 try{tracks=JSON.parse(localStorage.getItem("bpm_music")||"[]")}catch(_){tracks=[]}
 if(canSpeak()){fillVoices();speechSynthesis.onvoiceschanged=fillVoices;}
 renderTracks();
-const SACRED=[
+const HYMNS={"title": "Public-domain hymns", "chapters": [{"chapter": 1, "title": "Amazing Grace", "verses": [{"verse": 1, "text": "Amazing grace! how sweet the sound,\nThat saved a wretch like me!\nI once was lost, but now am found;\nWas blind, but now I see."}, {"verse": 2, "text": "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;\nHow precious did that grace appear\nThe hour I first believed."}, {"verse": 3, "text": "Through many dangers, toils and snares,\nI have already come;\n'Tis grace hath brought me safe thus far,\nAnd grace will lead me home."}]}, {"chapter": 2, "title": "What a Friend We Have in Jesus", "verses": [{"verse": 1, "text": "What a friend we have in Jesus,\nAll our sins and griefs to bear!\nWhat a privilege to carry\nEverything to God in prayer!"}, {"verse": 2, "text": "Have we trials and temptations?\nIs there trouble anywhere?\nWe should never be discouraged—\nTake it to the Lord in prayer."}]}, {"chapter": 3, "title": "Blessed Assurance", "verses": [{"verse": 1, "text": "Blessed assurance, Jesus is mine!\nO what a foretaste of glory divine!\nHeir of salvation, purchase of God,\nBorn of His Spirit, washed in His blood."}]}, {"chapter": 4, "title": "It Is Well with My Soul", "verses": [{"verse": 1, "text": "When peace, like a river, attendeth my way,\nWhen sorrows like sea billows roll;\nWhatever my lot, Thou hast taught me to say,\nIt is well, it is well with my soul."}]}, {"chapter": 5, "title": "Just As I Am", "verses": [{"verse": 1, "text": "Just as I am, without one plea,\nBut that Thy blood was shed for me,\nAnd that Thou bidd'st me come to Thee,\nO Lamb of God, I come, I come."}]}, {"chapter": 6, "title": "Rock of Ages", "verses": [{"verse": 1, "text": "Rock of Ages, cleft for me,\nLet me hide myself in Thee;\nLet the water and the blood,\nFrom Thy wounded side which flowed,\nBe of sin the double cure;\nSave from wrath and make me pure."}]}, {"chapter": 7, "title": "Swing Low, Sweet Chariot", "verses": [{"verse": 1, "text": "Swing low, sweet chariot,\nComing for to carry me home;\nSwing low, sweet chariot,\nComing for to carry me home."}, {"verse": 2, "text": "I looked over Jordan, and what did I see,\nComing for to carry me home?\nA band of angels coming after me,\nComing for to carry me home."}]}]};
+const SACRED=[{id:"hymns",name:"Public-domain hymns (lyrics)"},
  {id:"bom",name:"Book of Mormon",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/book-of-mormon.json"},{id:"dc",name:"Doctrine and Covenants",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/doctrine-and-covenants.json"},{id:"pgp",name:"Pearl of Great Price",api:"https://raw.githubusercontent.com/bcbooks/scriptures-json/master/pearl-of-great-price.json"},
  {id:"quran",name:"Quran (Pickthall English)",api:"https://api.alquran.cloud/v1/quran/en.pickthall"},
  {id:"tanakh",name:"Torah / Tanakh"},{id:"enoch",name:"Book of Enoch"},{id:"jubilees",name:"Book of Jubilees"},
@@ -642,7 +651,7 @@ const SACRED=[
  {id:"botd",name:"Egyptian Book of the Dead"},{id:"other",name:"Other sacred text (custom)"}];
 const sacredEntry=()=>SACRED.find(x=>x.id===$("sacredSelect").value)||SACRED[0];
 const sacredKey=id=>"bpm_sacred_"+id;
-const sacredGet=id=>{try{return JSON.parse(localStorage.getItem(sacredKey(id))||"null")}catch(_){return null}};
+const sacredGet=id=>{if(id==="hymns")return HYMNS;try{return JSON.parse(localStorage.getItem(sacredKey(id))||"null")}catch(_){return null}};
 function sacredInit(){
   const sel=$("sacredSelect"); if(!sel)return;
   sel.innerHTML=SACRED.map(x=>'<option value="'+x.id+'">'+escapeHtml(x.name)+(sacredGet(x.id)?" ✓":"")+'</option>').join("");
@@ -681,6 +690,15 @@ function apiToBook(r,name){
   (r.books||[]).forEach(b=>(b.chapters||[]).forEach(c=>out.push({chapter:out.length+1,title:b.book+" "+c.chapter,verses:vs(c.verses)})));
   (r.sections||[]).forEach(x=>out.push({chapter:out.length+1,title:"Section "+x.section,verses:vs(x.verses)}));
   return{title:name,chapters:out.filter(c=>c.verses.length)};
+}
+async function sacredLink(){
+  const u=$("sacredLink").value.trim(),e=sacredEntry();
+  if(!/^https?:\/\//i.test(u)){toast("Paste a link to a .txt or .json file");return}
+  if(e.id==="hymns"){toast("Pick a different book first");return}
+  $("sacredStatus").textContent="Loading…";
+  try{const r=await fetch(u);if(!r.ok)throw 0;let raw=await r.text();if(/^\s*</.test(raw))raw=raw.replace(/<(script|style)[\s\S]*?<\/\1>/gi," ").replace(/<\/(p|div|h\d|li|br)>/gi,"\n\n").replace(/<[^>]+>/g," ");
+    sacredSave(e.id,parseSacred(raw,e.name));$("sacredLink").value="";}
+  catch(_){$("sacredStatus").textContent="Could not load that link (some sites block apps). Download the file and tap Upload text instead.";}
 }
 async function sacredOnline(){
   const e=sacredEntry(); if(!e.api){toast("No online source for this book yet. Upload a file instead.");return}

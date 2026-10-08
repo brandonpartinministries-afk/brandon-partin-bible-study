@@ -76,6 +76,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="studies">Studies</button>
     <button type="button" data-action="togglePlayer">🎵 Listen</button>
     <button type="button" data-screen="sacred">Sacred Texts</button>
+    <button type="button" data-screen="strongs">Strong's</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
     <button type="button" data-screen="admin" id="adminNav">🔐 Admin</button>
@@ -203,6 +204,16 @@ body.light .toast{background:#172033;color:#fff}
       <div class="grid2" style="margin-top:10px"><button type="button" class="primary" data-action="sacredOpen">📖 Open</button><button type="button" class="danger" data-action="sacredRemove">Remove</button></div></div>
   </div>
   <div id="sacredCard" class="card" hidden></div>
+</section>
+<section id="strongs" class="screen">
+  <div class="card"><span class="pill">🔎 Strong's Concordance</span><h1>Strong's Concordance</h1>
+    <p class="muted">Look up Hebrew (H) and Greek (G) words by Strong's number (like H430 or G26), by transliteration, or by meaning.</p>
+    <p class="muted">Dictionary data from the OpenScriptures Strong's project (CC BY-SA).</p>
+    <p id="strongsStatus" class="muted"></p>
+    <div class="searchRow"><input id="strongsQ" placeholder="🔍 H430, G26, agape, love…" autocomplete="off" autocapitalize="off"><button type="button" class="secondary" data-action="strongsClear">Clear</button></div>
+    <select id="strongsLang" aria-label="Language" style="margin-top:8px"><option value="both">Hebrew &amp; Greek</option><option value="H">Hebrew (Old Testament)</option><option value="G">Greek (New Testament)</option></select>
+    <div id="strongsResults" style="margin-top:10px"></div>
+  </div>
 </section>
 <div id="player" class="player" hidden><div class="wrap">
   <div style="display:flex;justify-content:space-between;align-items:center"><b>🎵 Music &amp; 🔊 Read aloud</b><button type="button" class="secondary" data-action="togglePlayer">Close</button></div>
@@ -446,7 +457,7 @@ function exportLessons(){
 
 function $(id){return document.getElementById(id)}
 function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800)}
-function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id));window.scrollTo({top:0,behavior:"smooth"})}
+function showScreen(id){if(id==="strongs")strongsLoad();document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id));window.scrollTo({top:0,behavior:"smooth"})}
 function renderDevotional(){const d=allDevotionals[devIndex%allDevotionals.length];$("devTitle").textContent=d.title;$("devText").textContent=d.text;$("devRef").textContent=d.ref;$("homeDevTitle").textContent=d.title;$("homeDevText").textContent=d.text}
 function renderDevotionals(){const box=$("devotionalGrid");if(!box)return;const custom=importedDevotionals;if(!custom.length){box.innerHTML='<p class="muted">No custom devotionals yet.</p>';return;}box.innerHTML=custom.map((d,i)=>'<div class="tile"><b>'+escapeHtml(d.title)+'</b><p class="muted">'+escapeHtml(d.series||d.ref)+'</p><p>'+escapeHtml(d.text)+'</p><button type="button" class="secondary" data-devotional="'+i+'">Open devotional</button></div>').join("");}
 function openVerse(ref){
@@ -541,6 +552,7 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const sg=e.target.closest("[data-strongs]");if(sg){e.preventDefault();strongsOpen(sg.dataset.strongs);return}
  const rr=e.target.closest("[data-readref]");if(rr){const [b,c]=rr.dataset.readref.split("|");showScreen("bible");if(bibleBookData[b]){$("bookSelect").value=b;populateChapters();$("chapterSelect").value=c;openChapter();}else toast("The Bible is still loading");return}
  const action=e.target.closest("[data-action]");if(!action)return;
  switch(action.dataset.action){
@@ -584,6 +596,8 @@ function handleTap(e){
   case"sacredOpen":sacredOpen();break;
   case"sacredLink":sacredLink();break;
   case"sacredRemove":sacredRemove();break;
+  case"strongsClear":strongsClear();break;
+  case"strongsRetry":strongsLoad();break;
   case"adminImportLesson":publishLessons($("adminLessonFile").files?.[0]);break;
   case"adminImportDevotional":publishDevotionals($("adminDevotionalFile").files?.[0]);break;
  }
@@ -713,6 +727,56 @@ function sacredOpen(){
   card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function sacredRemove(){const e=sacredEntry();if(!sacredGet(e.id)||!confirm("Remove "+e.name+" from this device?"))return;localStorage.removeItem(sacredKey(e.id));const k=e.id;sacredInit();$("sacredSelect").value=k;sacredRefresh();}
+/* ---- Strong's Concordance ---- */
+let strongsData=null,strongsIdx=[],strongsBusy=false;
+const strongsNorm=x=>String(x||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f\u0591-\u05c7]/g,"");
+async function strongsLoad(){
+  if(strongsData||strongsBusy)return;
+  strongsBusy=true;const st=$("strongsStatus");st.textContent="Loading concordance…";
+  try{
+    const r=await fetch("./strongs.json");if(!r.ok)throw new Error("HTTP "+r.status);
+    strongsData=await r.json();strongsIdx=[];
+    for(const l of["H","G"])for(const n in(strongsData[l]||{})){const e=strongsData[l][n];strongsIdx.push({l,n,t:strongsNorm(e.t),g:strongsNorm(e.l),h:strongsNorm((e.l||"")+" "+(e.t||"")+" "+(e.p||"")+" "+(e.d||""))});}
+    st.textContent="Loaded "+strongsIdx.length.toLocaleString()+" entries.";
+    if($("strongsQ").value.trim())strongsSearch();
+  }catch(err){strongsData=null;st.innerHTML='Could not load strongs.json (keep it next to index.html). <button type="button" class="secondary" data-action="strongsRetry">Retry</button>';}
+  strongsBusy=false;
+}
+function strongsLinks(text,l){
+  return escapeHtml(text||"").replace(/\b([HG])0*(\d{1,4})\b/g,(m,k,n)=>strongsData?.[k]?.[n]?'<a href="#" data-strongs="'+k+n+'">'+m+'</a>':m);
+}
+function strongsEntry(l,n){
+  const e=strongsData?.[l]?.[n];if(!e)return"";
+  return '<div class="result"><span class="pill">'+(l==="H"?"Hebrew":"Greek")+" "+l+n+'</span> '+(e.l?'<span lang="'+(l==="H"?"he":"el")+'" style="font-size:1.35em;margin-right:6px">'+escapeHtml(e.l)+'</span>':"")+'<b>'+escapeHtml(e.t||"")+'</b>'+(e.p?' <span class="muted">· '+escapeHtml(e.p)+'</span>':"")+'<p style="margin:8px 0 0;line-height:1.6">'+strongsLinks(e.d,l)+'</p></div>';
+}
+function strongsSearch(){
+  const box=$("strongsResults"),q=$("strongsQ").value.trim();
+  if(!strongsData){strongsLoad();return}
+  if(!q){box.innerHTML="";return}
+  const sel=$("strongsLang").value,langs=sel==="both"?["H","G"]:[sel];
+  const m=q.match(/^([hg])?\s*0*(\d{1,4})$/i);
+  if(m){
+    const ls=m[1]?[m[1].toUpperCase()]:langs;
+    box.innerHTML=ls.map(l=>strongsEntry(l,m[2])).join("")||'<p class="muted">No entry found for that number.</p>';
+    return;
+  }
+  const t=strongsNorm(q),hits=[];
+  for(const x of strongsIdx){
+    if(!langs.includes(x.l))continue;
+    const rank=(x.t===t||x.g===t)?0:(x.t.startsWith(t)||x.g.startsWith(t))?1:(x.t.includes(t)||x.g.includes(t))?2:x.h.includes(t)?3:9;
+    if(rank<9)hits.push({x,rank});
+  }
+  hits.sort((a,b)=>a.rank-b.rank||(a.x.l<b.x.l?-1:a.x.l>b.x.l?1:Number(a.x.n)-Number(b.x.n)));
+  box.innerHTML=hits.length?hits.slice(0,40).map(h=>strongsEntry(h.x.l,h.x.n)).join("")+(hits.length>40?'<p class="muted">Showing 40 of '+hits.length+' matches — narrow your search.</p>':""):'<p class="muted">No matches.</p>';
+}
+function strongsOpen(code){
+  showScreen("strongs");$("strongsLang").value="both";$("strongsQ").value=code;
+  strongsSearch();$("strongsResults").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function strongsClear(){$("strongsQ").value="";$("strongsResults").innerHTML="";}
+$("strongsQ")?.addEventListener("input",()=>{clearTimeout(window.__sq);window.__sq=setTimeout(strongsSearch,250)});
+$("strongsQ")?.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();strongsSearch();}});
+$("strongsLang")?.addEventListener("change",strongsSearch);
 document.addEventListener("click",handleTap);
 document.addEventListener("touchend",handleTap,{passive:true});
 $("search")?.addEventListener("input",search);

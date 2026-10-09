@@ -45,6 +45,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
 .srmPlayer iframe,.srmPlayer video{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}.srmPlayer audio{width:100%}
 .ptItem{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden}.ptHead{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:transparent;color:inherit;border:0;padding:12px;font-size:1rem;min-height:48px}.ptBody{padding:0 12px 12px}.ptBody h4{margin:12px 0 4px}.arab{font-size:1.5rem;line-height:2;direction:rtl;text-align:right}.ptNext{background:rgba(245,197,66,.15)}
+.ptBody .speaking{background:rgba(245,197,66,.22);border-radius:8px}
 mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}
 .chipbtn{width:auto;display:inline-block;min-height:34px;padding:4px 10px;margin:3px;font-size:.85rem}
 </style>
@@ -253,6 +254,7 @@ body.light .toast{background:#172033;color:#fff}
   </div>
   <div class="card"><h2>⏰ Alerts</h2>
     <label style="display:flex;align-items:center;gap:8px"><input id="ptNotify" type="checkbox" style="width:auto">Alert me at each prayer time while this app is open</label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:8px"><input id="ptAuto" type="checkbox" style="width:auto">Also read the prayer aloud at each alert</label>
     <p class="muted">Alerts play a tone and show a notification only while this app is open on your phone. For alarms that ring even when the app is closed, add them to your calendar:</p>
     <button type="button" class="primary" data-action="ptIcs">📅 Add alarms to my calendar (next 30 days)</button>
     <p class="muted">This makes a file with one event and alarm for each time in the tradition you are viewing. Open it and your Calendar app adds them. Make another file each month, since the Islamic times shift through the year.</p></div>
@@ -632,6 +634,8 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const pts=e.target.closest("[data-ptspeak]");if(pts){ptSpeak(pts.dataset.ptspeak);return}
+ if(e.target.closest("[data-ptstop]")){speakStop();return}
  const ptt=e.target.closest("[data-pttoggle]");if(ptt){const b=$("ptb-"+ptt.dataset.pttoggle);if(b)b.hidden=!b.hidden;return}
  const ptf=e.target.closest("[data-ptfaith]");if(ptf){PT.faith=ptf.dataset.ptfaith;ptSave();ptRender();return}
  const sp=e.target.closest("[data-sermon-play]");if(sp){sermonPlay(+sp.dataset.sermonPlay);return}
@@ -902,9 +906,9 @@ const SALAH=`<h4>Before you pray</h4><p>Be clean and in wudu. Wudu: say <i>Bismi
 <h4>6. Taslim (ending)</h4><p>Turn your head to the right and say <i>As-salamu 'alaykum wa rahmatullah</i>, then to the left and say it again.</p>
 <h4>After the prayer</h4><p>Say <i>Astaghfirullah</i> three times, then <i>Subhanallah</i> 33 times, <i>Alhamdulillah</i> 33 times, and <i>Allahu akbar</i> 34 times. Read Ayat al-Kursi (Qur'an 2:255) and make dua from your heart.</p>
 <h4>The call to prayer (Adhan)</h4><p><i>Allahu akbar</i> (4 times). <i>Ash-hadu an la ilaha illallah</i> (2). <i>Ash-hadu anna Muhammadan rasulullah</i> (2). <i>Hayya 'alas-salah</i> (2). <i>Hayya 'alal-falah</i> (2). <i>Allahu akbar</i> (2). <i>La ilaha illallah</i> (1). At Fajr, after the second <i>Hayya 'alal-falah</i>, add <i>As-salatu khayrun minan-nawm</i> (prayer is better than sleep).</p>`;
-let PT={lat:null,lng:null,faith:"christian",method:"mwl",asr:1,off:0,notify:false};
+let PT={lat:null,lng:null,faith:"christian",method:"mwl",asr:1,off:0,notify:false,autoRead:false};
 try{Object.assign(PT,JSON.parse(localStorage.getItem("bpm_pt")||"{}"))}catch(_){} PT.off=0;
-function ptSave(){try{localStorage.setItem("bpm_pt",JSON.stringify({lat:PT.lat,lng:PT.lng,faith:PT.faith,method:PT.method,asr:PT.asr,notify:PT.notify}))}catch(_){}}
+function ptSave(){try{localStorage.setItem("bpm_pt",JSON.stringify({lat:PT.lat,lng:PT.lng,faith:PT.faith,method:PT.method,asr:PT.asr,notify:PT.notify,autoRead:PT.autoRead}))}catch(_){}}
 const _r=Math.PI/180,_S=a=>Math.sin(a*_r),_C=a=>Math.cos(a*_r),_T=a=>Math.tan(a*_r),_AS=x=>Math.asin(x)/_r,_AC=x=>Math.acos(x)/_r,_AT=x=>Math.atan(x)/_r,_AT2=(y,x)=>Math.atan2(y,x)/_r;
 const _fx=(a,b)=>a-b*Math.floor(a/b),_fh=a=>_fx(a,24);
 function _jd(y,m,d){if(m<=2){y--;m+=12}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5}
@@ -929,7 +933,7 @@ function ptLocate(){
   navigator.geolocation.getCurrentPosition(pos=>{PT.lat=+pos.coords.latitude.toFixed(4);PT.lng=+pos.coords.longitude.toFixed(4);ptSave();ptRender();toast("Location saved on this device")},()=>toast("Could not get your location. Allow location access or enter coordinates."),{timeout:12000});
 }
 function ptSaveLoc(){const a=parseFloat($("ptLat").value),b=parseFloat($("ptLng").value);if(!(a>=-90&&a<=90&&b>=-180&&b<=180)){toast("Enter a valid latitude and longitude");return}PT.lat=a;PT.lng=b;ptSave();ptRender();toast("Location saved")}
-function ptItem(id,head,right,body,next){return '<div class="ptItem'+(next?" ptNext":"")+'"><button type="button" class="ptHead" data-pttoggle="'+id+'"><span><b>'+head+'</b></span><span>'+right+'</span></button><div class="ptBody" id="ptb-'+id+'" hidden>'+body+'</div></div>'}
+function ptItem(id,head,right,body,next){return '<div class="ptItem'+(next?" ptNext":"")+'"><button type="button" class="ptHead" data-pttoggle="'+id+'"><span><b>'+head+'</b></span><span>'+right+'</span></button><div class="ptBody" id="ptb-'+id+'" hidden><p class="ptCtl"><button type="button" class="primary chipbtn" data-ptspeak="'+id+'">🔊 Read aloud</button><button type="button" class="secondary chipbtn" data-ptstop="1">⏹ Stop</button></p>'+body+'</div></div>'}
 function ptRender(){
   const base=new Date();base.setDate(base.getDate()+PT.off);const isTd=PT.off===0,now=new Date();
   $("ptDate").textContent=base.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
@@ -960,14 +964,14 @@ function ptRender(){
     extra=ptItem("how","How to pray (Salah), step by step","",SALAH,false);
     $("ptNote").textContent="Times are calculated for your location using the method you chose and may differ from your local mosque by a few minutes. Follow your mosque or scholar where they differ. Wording and details vary by school, so learn the prayer from a qualified teacher.";
   }
-  $("ptList").innerHTML=html;$("ptExtra").innerHTML=extra;$("ptNotify").checked=!!PT.notify;ptSchedule();
+  $("ptList").innerHTML=html;$("ptExtra").innerHTML=extra;$("ptNotify").checked=!!PT.notify;$("ptAuto").checked=!!PT.autoRead;ptSchedule();
 }
 let ptTimers=[],ptAC=null;
 function ptEvents(base,faith){
   const out=[],has=PT.lat!=null&&PT.lng!=null,t=has?ptCompute(base):null;
   const at=h=>new Date(base.getFullYear(),base.getMonth(),base.getDate(),0,Math.round(_fh(h)*60));
-  if(faith==="christian"){CHOURS.forEach(c=>{let h=c.h;if(t&&c.key==="sunrise"&&isFinite(t.sunrise))h=t.sunrise;if(t&&c.key==="sunset"&&isFinite(t.sunset))h=t.sunset;out.push({n:c.n,d:at(h),sub:c.sub})})}
-  else if(has){IPRAY.forEach(x=>{if(isFinite(t[x.key]))out.push({n:x.n,d:at(t[x.key]),sub:"Islamic prayer"})})}
+  if(faith==="christian"){CHOURS.forEach(c=>{let h=c.h;if(t&&c.key==="sunrise"&&isFinite(t.sunrise))h=t.sunrise;if(t&&c.key==="sunset"&&isFinite(t.sunset))h=t.sunset;out.push({n:c.n,d:at(h),sub:c.sub,id:"c-"+c.id})})}
+  else if(has){IPRAY.forEach(x=>{if(isFinite(t[x.key]))out.push({n:x.n,d:at(t[x.key]),sub:"Islamic prayer",id:"i-"+x.id})})}
   return out;
 }
 function ptBeep(prime){
@@ -977,7 +981,7 @@ function ptBeep(prime){
 }
 function ptAlert(e){
   const title="Time for "+e.n,body=e.sub+" · "+e.d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
-  toast("🕰️ "+title);ptBeep();try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(_){}
+  toast("🕰️ "+title);ptBeep();if(PT.autoRead&&canSpeak()){const b=$("ptb-"+e.id);if(b){b.hidden=false;setTimeout(()=>ptSpeak(e.id),1800)}}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(_){}
   try{if("Notification" in window&&Notification.permission==="granted"){
     const show=()=>new Notification(title,{body,tag:"bpm-"+e.n});
     if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>r?r.showNotification(title,{body,tag:"bpm-"+e.n}):show(),()=>{try{show()}catch(_){}});else show();}}catch(_){}
@@ -1004,6 +1008,28 @@ $("ptNotify").addEventListener("change",async e=>{
     else{if(Notification.permission==="default"){try{await Notification.requestPermission()}catch(_){}}if(Notification.permission==="denied")toast("Notifications are blocked in your browser settings. A tone and in-app alert will still play.");else toast("Alerts are on while this app is open")}}
   ptSchedule();
 });
+
+function ptBodyQueue(body){
+  const q=[],hasAr=canSpeak()&&speechSynthesis.getVoices().some(v=>/^ar/i.test(v.lang));
+  body.querySelectorAll("h4,p").forEach(el=>{
+    if(el.classList.contains("muted")||el.classList.contains("ptCtl"))return;
+    if(el.classList.contains("arab")){if(hasAr)q.push({el,text:el.textContent.trim(),lang:"ar"});return}
+    const bt=[...el.querySelectorAll("button")].map(b=>b.textContent.replace(/📖/g,"").trim());
+    let text=bt.length?"Scripture to read: "+bt.join(", and ")+".":el.textContent.replace(/\s+/g," ").trim();
+    if(el.tagName==="H4")text=text.replace(/^\d+\.\s*/,"")+".";
+    if(text)q.push({el,text});
+  });
+  return q;
+}
+function ptSpeak(id){
+  if(!canSpeak()){toast("Read aloud is not supported in this browser");return}
+  const body=$("ptb-"+id);if(!body)return;body.hidden=false;
+  const q=ptBodyQueue(body);if(!q.length)return;
+  speechSynthesis.cancel();spQ=q;spI=0;spOn=true;spStarted=false;clearTimeout(spWatch);
+  spWatch=setTimeout(()=>{if(!spStarted)toast("No sound? Turn off silent mode, raise the volume, or pick another voice in the Listen panel.")},3500);
+  spNext();
+}
+$("ptAuto").addEventListener("change",e=>{PT.autoRead=e.target.checked;ptSave();if(PT.autoRead&&!PT.notify){PT.notify=true;$("ptNotify").checked=true;ptSave();ptSchedule();toast("Alerts turned on so the prayer can be read at each time")}});
 $("ptMethod").addEventListener("change",e=>{PT.method=e.target.value;ptSave();ptRender()});
 $("ptAsr").addEventListener("change",e=>{PT.asr=+e.target.value;ptSave();ptRender()});
 ptRender();
@@ -1018,26 +1044,28 @@ function speakCurrent(){
   if(onScr("bible")&&!$("chapterCard").hidden){const t=$("chapterCard").querySelector("h2")?.textContent;if(t)q.push({text:t.replace(/(\d+)$/," chapter $1")});q.push(...rowsOf($("chapterCard")));}
   else if(onScr("sacred")&&!$("sacredCard").hidden){q.push({text:$("sacredCard").querySelector("h2").textContent},...rowsOf($("sacredCard")));}
   else if(onScr("devotional")||onScr("home")){const d=allDevotionals[devIndex%allDevotionals.length];q.push({text:d.title+". "+d.text+" Scripture: "+d.ref+"."+(d.prayer?" Prayer. "+d.prayer:"")});}
+  else if(onScr("times")){document.querySelectorAll("#times .ptBody:not([hidden])").forEach(b=>q.push(...ptBodyQueue(b)))}
   else if(onScr("studies")&&!$("lessonCard").hidden){q.push({text:$("lessonCard").innerText.replace(/Write reflection|Read in Bible/g,"")});}
-  if(!q.length){toast("Open a chapter or devotional first");return}
+  if(!q.length){toast("Open a chapter, devotional, or prayer first");return}
   if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
   spQ=q;spI=0;spOn=true;spStarted=false;clearTimeout(spWatch);
   spWatch=setTimeout(()=>{if(!spStarted)toast("No sound? Turn off silent mode, raise the volume, or pick another voice.")},3500);
   spNext();
 }
 function spNext(){
-  document.querySelectorAll(".verseRow.speaking").forEach(x=>x.classList.remove("speaking"));
+  document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));
   if(!spOn)return;
   if(spI>=spQ.length){spOn=false;if($("autoNext").checked&&onScr("bible")){chapterMove(1);setTimeout(speakCurrent,700);}return}
   const it=spQ[spI],u=new SpeechSynthesisUtterance(it.text);u.rate=Number($("speechRate").value)||1;
-  const v=speechSynthesis.getVoices().find(x=>x.name===$("voiceSel").value);
+  let v=speechSynthesis.getVoices().find(x=>x.name===$("voiceSel").value);
+  if(it.lang)v=speechSynthesis.getVoices().find(x=>x.lang.toLowerCase().startsWith(it.lang))||null;
   if(v){u.voice=v;u.lang=v.lang}else{const l=TRANS_LIST[TRANS]?.lang;if(l&&!/^en/i.test(l))u.lang=l}
   u.onstart=()=>{spStarted=true};(window.__utts=window.__utts||[]).push(u);if(window.__utts.length>40)window.__utts.shift();
   u.onend=()=>{spI++;spNext()};u.onerror=()=>{spI++;spNext()};
   if(it.el){it.el.classList.add("speaking");it.el.scrollIntoView({behavior:"smooth",block:"center"})}
   speechSynthesis.speak(u);
 }
-function speakStop(){spOn=false;if(canSpeak())speechSynthesis.cancel();document.querySelectorAll(".verseRow.speaking").forEach(x=>x.classList.remove("speaking"));}
+function speakStop(){spOn=false;if(canSpeak())speechSynthesis.cancel();document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));}
 function saveTracks(){try{localStorage.setItem("bpm_music",JSON.stringify(tracks.filter(t=>!t.temp)))}catch(_){}}
 function renderTracks(){const b=$("trackList");if(!b)return;b.innerHTML=tracks.length?tracks.map((t,i)=>'<div class="trk"><b>'+(i===cur?"▶ ":"")+escapeHtml(t.name)+'</b><button type="button" class="secondary" data-track="'+i+'">Play</button><button type="button" class="danger" data-trackdel="'+i+'">✕</button></div>').join(""):'<p class="muted">No music added yet.</p>';}
 function playTrack(i){

@@ -44,7 +44,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .fday.today{outline:2px solid #3b82f6}.fday.empty{border:0;visibility:hidden}
 .fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
 .srmPlayer iframe,.srmPlayer video{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}.srmPlayer audio{width:100%}
-.ptItem{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden}.ptHead{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:transparent;color:inherit;border:0;padding:12px;font-size:1rem;min-height:48px}.ptBody{padding:0 12px 12px}.ptBody h4{margin:12px 0 4px}.arab{font-size:1.5rem;line-height:2;direction:rtl;text-align:right}.ptNext{background:rgba(245,197,66,.15)}
+.ptItem{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden}.ptHead{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:transparent;color:inherit;border:0;padding:12px;font-size:1rem;min-height:48px}.ptBody{padding:0 12px 12px}.ptBody h4{margin:12px 0 4px}.arab,.heb{font-size:1.5rem;line-height:2;direction:rtl;text-align:right}.ptNext{background:rgba(245,197,66,.15)}
 .ptBody .speaking{background:rgba(245,197,66,.22);border-radius:8px}
 mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}
 .chipbtn{width:auto;display:inline-block;min-height:34px;padding:4px 10px;margin:3px;font-size:.85rem}
@@ -85,6 +85,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="bible">Bible</button>
     <button type="button" data-screen="concordance">Concordance</button>
     <button type="button" data-screen="feasts">Feasts</button>
+    <button type="button" data-screen="fasts">Fasts</button>
     <button type="button" data-screen="sermons">Sermons</button>
     <button type="button" data-screen="times">Prayer Times</button>
     <button type="button" data-screen="prayer">Prayer</button>
@@ -243,7 +244,7 @@ body.light .toast{background:#172033;color:#fff}
 <section id="times" class="screen">
   <div class="card"><span class="pill">🕰️ Prayer Times</span><h1>Hours of Prayer</h1>
     <p class="muted">Pick a tradition, then tap any prayer for a guided walk-through. Islamic times are calculated for your location. Christian hours use traditional times, with morning and evening following sunrise and sunset.</p>
-    <div style="margin:8px 0"><button type="button" class="chipbtn primary" data-ptfaith="christian">✝️ Christian</button><button type="button" class="chipbtn secondary" data-ptfaith="islamic">☪️ Islamic</button></div>
+    <div style="margin:8px 0"><button type="button" class="chipbtn primary" data-ptfaith="christian">✝️ Christian</button><button type="button" class="chipbtn secondary" data-ptfaith="islamic">☪️ Islamic</button><button type="button" class="chipbtn secondary" data-ptfaith="jewish">✡️ Jewish</button></div>
     <div class="stack"><div id="ptLoc" class="muted"></div>
       <button type="button" class="secondary" data-action="ptLocate">📍 Use my location</button>
       <div class="grid2"><input id="ptLat" inputmode="decimal" placeholder="Latitude"><input id="ptLng" inputmode="decimal" placeholder="Longitude"></div>
@@ -259,6 +260,14 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" class="primary" data-action="ptIcs">📅 Add alarms to my calendar (next 30 days)</button>
     <p class="muted">This makes a file with one event and alarm for each time in the tradition you are viewing. Open it and your Calendar app adds them. Make another file each month, since the Islamic times shift through the year.</p></div>
   <div class="card"><div id="ptList"></div><div id="ptExtra"></div><p class="muted" id="ptNote"></p></div>
+</section>
+<section id="fasts" class="screen">
+  <div class="card"><span class="pill">🍞 Fasting</span><h1>Fasts</h1>
+    <p class="muted">Christian, Jewish, and Islamic fasts for the year you are viewing, with dates worked out from each calendar. Set your location on the Prayer Times tab to also see the daily start and end times.</p>
+    <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><button type="button" class="secondary chipbtn" data-action="fastPrev" aria-label="Previous year">‹</button><b id="fastYear" style="flex:1;text-align:center"></b><button type="button" class="secondary chipbtn" data-action="fastNext" aria-label="Next year">›</button><button type="button" class="secondary chipbtn" data-action="fastToday">This year</button></div>
+    <div><button type="button" class="chipbtn primary" data-fastf="all">All</button><button type="button" class="chipbtn secondary" data-fastf="c">✝️ Christian</button><button type="button" class="chipbtn secondary" data-fastf="j">✡️ Jewish</button><button type="button" class="chipbtn secondary" data-fastf="i">☪️ Islamic</button></div>
+    <p class="muted" id="fastNote"></p></div>
+  <div id="fastList"></div>
 </section>
 <section id="sermons" class="screen">
   <div class="card"><span class="pill">🎥 Sermons</span><h1>Sermons</h1><p class="muted">Watch or listen to messages from Brandon Partin Ministries.</p>
@@ -634,6 +643,7 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const ff=e.target.closest("[data-fastf]");if(ff){FS.f=ff.dataset.fastf;fastRender();return}
  const pts=e.target.closest("[data-ptspeak]");if(pts){ptSpeak(pts.dataset.ptspeak);return}
  if(e.target.closest("[data-ptstop]")){speakStop();return}
  const ptt=e.target.closest("[data-pttoggle]");if(ptt){const b=$("ptb-"+ptt.dataset.pttoggle);if(b)b.hidden=!b.hidden;return}
@@ -674,6 +684,9 @@ function handleTap(e){
   case"adminLogout":adminLogout();break;
   case"todayStudy":openLesson(DOY-1);break;
   case"concSearch":concSearch();break;
+  case"fastPrev":FS.y--;fastRender();break;
+  case"fastNext":FS.y++;fastRender();break;
+  case"fastToday":FS.y=new Date().getFullYear();fastRender();break;
   case"ptIcs":ptIcs();break;
   case"ptLocate":ptLocate();break;
   case"ptSaveLoc":ptSaveLoc();break;
@@ -906,6 +919,19 @@ const SALAH=`<h4>Before you pray</h4><p>Be clean and in wudu. Wudu: say <i>Bismi
 <h4>6. Taslim (ending)</h4><p>Turn your head to the right and say <i>As-salamu 'alaykum wa rahmatullah</i>, then to the left and say it again.</p>
 <h4>After the prayer</h4><p>Say <i>Astaghfirullah</i> three times, then <i>Subhanallah</i> 33 times, <i>Alhamdulillah</i> 33 times, and <i>Allahu akbar</i> 34 times. Read Ayat al-Kursi (Qur'an 2:255) and make dua from your heart.</p>
 <h4>The call to prayer (Adhan)</h4><p><i>Allahu akbar</i> (4 times). <i>Ash-hadu an la ilaha illallah</i> (2). <i>Ash-hadu anna Muhammadan rasulullah</i> (2). <i>Hayya 'alas-salah</i> (2). <i>Hayya 'alal-falah</i> (2). <i>Allahu akbar</i> (2). <i>La ilaha illallah</i> (1). At Fajr, after the second <i>Hayya 'alal-falah</i>, add <i>As-salatu khayrun minan-nawm</i> (prayer is better than sleep).</p>`;
+
+const jrefs=a=>a.map(([b,c])=>'<button type="button" class="secondary chipbtn" data-readref="'+b+'|'+c+'">📖 '+b+' '+c+'</button>').join("");
+const JH=(he,tr,en)=>'<p class="heb">'+he+'</p><p><i>'+tr+'</i></p><p>Meaning: '+en+'</p>';
+const J_SHEMA=JH("שְׁמַע יִשְׂרָאֵל יְהוָה אֱלֹהֵינוּ יְהוָה אֶחָד","Shema Yisrael, Adonai Eloheinu, Adonai echad.","Hear, O Israel: the Lord our God, the Lord is one.")+JH("בָּרוּךְ שֵׁם כְּבוֹד מַלְכוּתוֹ לְעוֹלָם וָעֶד","Baruch shem kevod malchuto le'olam va'ed.","Blessed be the name of His glorious kingdom forever and ever.")+'<p>Then continue with "Thou shalt love the Lord thy God with all thine heart, and with all thy soul, and with all thy might," through the end of verse 9 (Deuteronomy 6:5-9, KJV).</p>';
+const J_AMIDAH=JH("אֲדֹנָי שְׂפָתַי תִּפְתָּח וּפִי יַגִּיד תְּהִלָּתֶךָ","Adonai, sefatai tiftach, ufi yagid tehilatecha.","O Lord, open my lips, and my mouth will declare Your praise.")+'<p>Stand with your feet together, facing Jerusalem, and pray quietly. The Amidah has three parts. First comes praise: God of our ancestors, God\'s power over life, and God\'s holiness. Then come requests: for wisdom, for the way back to God, for forgiveness, for redemption, for healing, for a good year and daily bread, for justice, for the righteous, for Jerusalem, for the hope of restoration, and that God would hear our prayer. Last come thanks for God\'s daily kindness and a prayer for peace.</p>';
+const J_CLOSE=JH("עֹשֶׂה שָׁלוֹם בִּמְרוֹמָיו הוּא יַעֲשֶׂה שָׁלוֹם עָלֵינוּ וְעַל כָּל יִשְׂרָאֵל וְאִמְרוּ אָמֵן","Oseh shalom bimromav, hu ya'aseh shalom aleinu ve'al kol Yisrael, ve'imru amen.","May the One who makes peace in the heights make peace for us and for all Israel. And let us say: Amen.");
+const jb=(modeh,refs,mid,pray,refl)=>modeh+'<h4>Read</h4><p>'+jrefs(refs)+'</p>'+mid+'<h4>Pray in your own words</h4><p>'+pray+'</p><h4>Reflect</h4><p>'+refl+'</p><h4>Close</h4>'+J_CLOSE;
+const JPRAY=[
+{id:"shacharit",n:"Shacharit",he:"שחרית",sub:"Morning prayer, from sunrise",key:"sunrise",body:jb('<h4>Begin with thanks</h4>'+JH("מוֹדֶה אֲנִי לְפָנֶיךָ מֶלֶךְ חַי וְקַיָּם שֶׁהֶחֱזַרְתָּ בִּי נִשְׁמָתִי בְּחֶמְלָה רַבָּה אֱמוּנָתֶךָ","Modeh ani lefanecha, melech chai vekayam, shehechezarta bi nishmati bechemlah, rabbah emunatecha.","I thank You, living and eternal King, for returning my soul to me with compassion. Great is Your faithfulness."),[["Psalms",100],["Deuteronomy",6]],'<h4>The Shema</h4>'+J_SHEMA+'<h4>The Amidah</h4>'+J_AMIDAH,"God of my ancestors, thank You for this new morning. Strengthen me to serve You with all my heart. Guide my work, protect my family, and let me bring peace to everyone I meet today. Amen.","How can I show faithfulness to God in my work today?")},
+{id:"mincha",n:"Mincha",he:"מנחה",sub:"Afternoon prayer, from early afternoon",key:"minchaG",body:jb('<h4>Begin with Ashrei</h4>'+JH("אַשְׁרֵי יוֹשְׁבֵי בֵיתֶךָ עוֹד יְהַלְלוּךָ סֶּלָה","Ashrei yoshvei veitecha, od yehalelucha selah.","Happy are those who dwell in Your house; they will praise You forever."),[["Psalms",145]],'<h4>The Amidah</h4>'+J_AMIDAH,"Lord, in the middle of a busy day I stop to remember You. Forgive what I have done wrong since the morning. Give me strength for the rest of the day, and help me finish my work with honesty and kindness. Amen.","Where did I lose focus on God today, and how can I return?")},
+{id:"maariv",n:"Maariv (Arvit)",he:"מעריב",sub:"Evening prayer, from nightfall",key:"tzeit",body:jb('<h4>Begin</h4><p>As the day ends, set aside your worries and thank God for what the day held.</p>',[["Psalms",134],["Deuteronomy",6]],'<h4>The evening Shema</h4>'+J_SHEMA+'<p>After the Shema, the evening prayer asks God to let us lie down in peace and rise again to life. Pray this in your own words.</p><h4>The Amidah</h4>'+J_AMIDAH,"Guardian of Israel, thank You for this day and for bringing me safely to its end. Spread Your shelter of peace over my home. Forgive those who wronged me, and help me forgive. Let me rest well and wake in Your light. Amen.","What am I most grateful for tonight?")},
+{id:"bedtime",n:"Bedtime Shema",he:"קריאת שמע על המיטה",sub:"Before sleep",key:"none",body:jb('<h4>Begin</h4><p>It is a custom to forgive anyone who has hurt you and to ask forgiveness of anyone you have hurt, then to say the Shema before sleep.</p>',[["Deuteronomy",6],["Psalms",91]],'<h4>The Shema</h4>'+J_SHEMA,"Lord, into Your hands I place my spirit tonight, and my family with me. Keep us from harm, grant us peaceful sleep, and let us wake to serve You. Amen.","Is there anyone I need to forgive tonight?")}];
+function ptJewTimes(t){const sh=(t.sunset-t.sunrise)/12,ch=(t.sunrise+t.sunset)/2;return{alot:t.alot,sunrise:t.sunrise,sofShema:t.sunrise+3*sh,sofTefilla:t.sunrise+4*sh,chatzot:ch,minchaG:ch+0.5*sh,plag:t.sunrise+10.75*sh,sunset:t.sunset,tzeit:t.tzeit,none:NaN}}
 let PT={lat:null,lng:null,faith:"christian",method:"mwl",asr:1,off:0,notify:false,autoRead:false};
 try{Object.assign(PT,JSON.parse(localStorage.getItem("bpm_pt")||"{}"))}catch(_){} PT.off=0;
 function ptSave(){try{localStorage.setItem("bpm_pt",JSON.stringify({lat:PT.lat,lng:PT.lng,faith:PT.faith,method:PT.method,asr:PT.asr,notify:PT.notify,autoRead:PT.autoRead}))}catch(_){}}
@@ -920,7 +946,7 @@ function ptCompute(dt){
   const asr=(f,t)=>{const d=_sun(J+t).dec;return ang(-_AT(1/(f+_T(Math.abs(lat-d)))),t,false)};
   const adj=tz-lng/15;
   const r={fajr:ang(M.fa,5/24,true),sunrise:ang(0.833,6/24,true),dhuhr:mid(12/24)+1/60,asr:asr(+PT.asr,13/24),sunset:ang(0.833,18/24,false)};
-  r.maghrib=r.sunset;r.isha=M.ishaMin?r.maghrib+M.ishaMin/60:ang(M.isha,18/24,false);
+  r.maghrib=r.sunset;r.isha=M.ishaMin?r.maghrib+M.ishaMin/60:ang(M.isha,18/24,false);r.alot=ang(16.1,5/24,true);r.tzeit=ang(8.5,18/24,false);
   Object.keys(r).forEach(k=>r[k]+=adj);
   r.duha=r.sunrise+20/60;
   const night=_fh(r.fajr+24-r.maghrib)||0;r.tahajjud=_fh(r.maghrib+night*2/3);
@@ -953,6 +979,13 @@ function ptRender(){
       '<h4>1. Begin</h4><p>In the name of the Father, and of the Son, and of the Holy Spirit. Amen.</p><h4>2. Call to prayer</h4><p><i>'+escapeHtml(c.call)+'</i></p><h4>3. Read</h4><p>'+refs+'</p><h4>4. Pray</h4><p>'+escapeHtml(c.pray)+'</p><h4>5. Reflect</h4><p>'+escapeHtml(c.refl)+'</p><h4>6. Close</h4><p>'+LORDS+'</p>',nx&&nx.c===c)}).join("");
     $("ptNote").textContent="Traditions differ on the exact hours. These are the traditional times, and the prayers are written to guide you. Feel free to adapt them.";
     extra="";
+  }else if(PT.faith==="jewish"){
+    const Z=has?ptJewTimes(times):null,f=k=>Z&&isFinite(Z[k])?ptFmt(Z[k],base):"",day=base.getDay();
+    const top=has?'<p class="muted">Dawn <b>'+f("alot")+'</b> · Sunrise <b>'+f("sunrise")+'</b> · Latest Shema <b>'+f("sofShema")+'</b> · Midday <b>'+f("chatzot")+'</b> · Sunset <b>'+f("sunset")+'</b> · Nightfall <b>'+f("tzeit")+'</b>'+(day===5?'<br>Shabbat candles: about <b>'+ptFmt(Z.sunset-18/60,base)+'</b> (18 minutes before sunset; follow your community custom)':'')+(day===6?'<br>Shabbat ends: about <b>'+f("tzeit")+'</b> (customs vary)':'')+'</p>':'<p class="muted">Set your location above to see times. The prayers below work without it.</p>';
+    const list=JPRAY.map(j=>({j,h:Z?Z[j.key]:NaN})),nx=isTd&&Z?list.find(r=>isFinite(r.h)&&at(r.h)>now):null;
+    html=top+list.map(({j,h})=>ptItem("j-"+j.id,escapeHtml(j.n)+' <span class="muted">'+j.he+'</span><br><small class="muted">'+escapeHtml(j.sub)+'</small>',(isFinite(h)?ptFmt(h,base):"")+(nx&&nx.j===j?' <span class="pill">Next</span>':""),j.body,nx&&nx.j===j)).join("");
+    $("ptNote").textContent="Times follow the GRA method, with dawn at 16.1 degrees and nightfall at 8.5 degrees below the horizon. Communities differ, so follow your rabbi or community calendar where it differs. These guides are written in my own words and are not a replacement for the siddur.";
+    extra="";
   }else if(!has){
     html='<p class="muted">Tap “Use my location” (or enter coordinates) to see today’s prayer times.</p>';$("ptNote").textContent="";
   }else{
@@ -971,6 +1004,7 @@ function ptEvents(base,faith){
   const out=[],has=PT.lat!=null&&PT.lng!=null,t=has?ptCompute(base):null;
   const at=h=>new Date(base.getFullYear(),base.getMonth(),base.getDate(),0,Math.round(_fh(h)*60));
   if(faith==="christian"){CHOURS.forEach(c=>{let h=c.h;if(t&&c.key==="sunrise"&&isFinite(t.sunrise))h=t.sunrise;if(t&&c.key==="sunset"&&isFinite(t.sunset))h=t.sunset;out.push({n:c.n,d:at(h),sub:c.sub,id:"c-"+c.id})})}
+  else if(faith==="jewish"&&has){const Z=ptJewTimes(t);[["Shacharit",Z.sunrise,"shacharit"],["Mincha",Z.minchaG,"mincha"],["Maariv",Z.tzeit,"maariv"]].forEach(([n,h,id])=>{if(isFinite(h))out.push({n,d:at(h),sub:"Jewish prayer",id:"j-"+id})})}
   else if(has){IPRAY.forEach(x=>{if(isFinite(t[x.key]))out.push({n:x.n,d:at(t[x.key]),sub:"Islamic prayer",id:"i-"+x.id})})}
   return out;
 }
@@ -1013,7 +1047,7 @@ function ptBodyQueue(body){
   const q=[],hasAr=canSpeak()&&speechSynthesis.getVoices().some(v=>/^ar/i.test(v.lang));
   body.querySelectorAll("h4,p").forEach(el=>{
     if(el.classList.contains("muted")||el.classList.contains("ptCtl"))return;
-    if(el.classList.contains("arab")){if(hasAr)q.push({el,text:el.textContent.trim(),lang:"ar"});return}
+    if(el.classList.contains("arab")||el.classList.contains("heb")){const L=el.classList.contains("heb")?"he":"ar";if(canSpeak()&&speechSynthesis.getVoices().some(v=>v.lang.toLowerCase().startsWith(L)))q.push({el,text:el.textContent.trim(),lang:L});return}
     const bt=[...el.querySelectorAll("button")].map(b=>b.textContent.replace(/📖/g,"").trim());
     let text=bt.length?"Scripture to read: "+bt.join(", and ")+".":el.textContent.replace(/\s+/g," ").trim();
     if(el.tagName==="H4")text=text.replace(/^\d+\.\s*/,"")+".";
@@ -1033,6 +1067,68 @@ $("ptAuto").addEventListener("change",e=>{PT.autoRead=e.target.checked;ptSave();
 $("ptMethod").addEventListener("change",e=>{PT.method=e.target.value;ptSave();ptRender()});
 $("ptAsr").addEventListener("change",e=>{PT.asr=+e.target.value;ptSave();ptRender()});
 ptRender();
+
+const FS={y:new Date().getFullYear(),f:"all"},FCOL={c:"#8e44ad",j:"#2e86c1",i:"#229954"},FTR={c:"Christian",j:"Jewish",i:"Islamic"},hebC={},hijC={};
+const FD=(y,m,d)=>new Date(y,m-1,d,12),addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x},satMove=(d,n)=>d.getDay()===6?addD(d,n):d;
+function easterW(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),n=h+l-7*m+114;return FD(y,Math.floor(n/31),(n%31)+1)}
+function easterO(y){const a=y%4,b=y%7,c=y%19,d=(19*c+15)%30,e=(2*a+4*b-d+34)%7,n=d+e+114;return addD(FD(y,Math.floor(n/31),(n%31)+1),13)}
+function hebMap(y){if(hebC[y])return hebC[y];const f=new Intl.DateTimeFormat("en-u-ca-hebrew",{month:"long",day:"numeric"}),m={};
+  for(let i=0;i<366;i++){const d=new Date(y,0,1+i,12);if(d.getFullYear()!==y)break;const ps=f.formatToParts(d);let mo=((ps.find(p=>p.type==="month")||{}).value||"").toLowerCase().trim();const dd=parseInt((ps.find(p=>p.type==="day")||{}).value,10);
+    mo=/^adar/.test(mo)?"adar"+(/ii$/.test(mo)?"2":/ i$/.test(mo)?"1":""):mo.replace(/[^a-z]/g,"").slice(0,3);(m[mo+"|"+dd]=m[mo+"|"+dd]||[]).push(d)}
+  return hebC[y]=m}
+function hijMap(y){if(hijC[y])return hijC[y];let f;try{f=new Intl.DateTimeFormat("en-u-ca-islamic-umalqura",{month:"numeric",day:"numeric"})}catch(_){f=new Intl.DateTimeFormat("en-u-ca-islamic-civil",{month:"numeric",day:"numeric"})}
+  const m={};for(let i=0;i<366;i++){const d=new Date(y,0,1+i,12);if(d.getFullYear()!==y)break;const ps=f.formatToParts(d),mo=parseInt((ps.find(p=>p.type==="month")||{}).value,10),dd=parseInt((ps.find(p=>p.type==="day")||{}).value,10);(m[mo+"|"+dd]=m[mo+"|"+dd]||[]).push(d)}
+  return hijC[y]=m}
+const heb=(y,keys,n)=>keys.flatMap(k=>hebMap(y)[k]||[]).map(d=>{const x=n?satMove(d,n):d;return[x,x]});
+function hij(y,mo,d1,d2){const M=hijMap(y),ds=[];for(let d=d1;d<=d2;d++)(M[mo+"|"+d]||[]).forEach(x=>ds.push(x));ds.sort((a,b)=>a-b);const r=[];ds.forEach(x=>{const l=r[r.length-1];if(l&&Math.round((x-l[1])/864e5)===1)l[1]=x;else r.push([x,x])});return r}
+const FASTS=[
+{tr:"c",name:"Lent (Western churches)",ref:"Matthew 4:1-2; Joel 2:12-13",desc:"Forty days of repentance and preparation before Easter, from Ash Wednesday to Holy Saturday. Sundays are not counted as fast days. Catholics fast on Ash Wednesday and Good Friday and avoid meat on Fridays. Other Christians fast or give something up in their own way.",get:y=>{const e=easterW(y);return[[addD(e,-46),addD(e,-1)]]}},
+{tr:"c",name:"Good Friday",ref:"John 19",desc:"A day of fasting and prayer remembering the crucifixion of Jesus. Western churches traditionally keep one full meal and two light ones, and many keep a stricter fast.",get:y=>{const d=addD(easterW(y),-2);return[[d,d]]}},
+{tr:"c",name:"Great Lent and Holy Week (Orthodox)",ref:"Matthew 6:16-18",desc:"Begins on Clean Monday and runs through Holy Week to Pascha (Easter). Meat, dairy, and eggs are avoided, with oil and wine limited on most days. Holy Week, and especially Good Friday, is the strictest. Easter is figured by the Orthodox calendar.",get:y=>{const e=easterO(y);return[[addD(e,-48),addD(e,-1)]]}},
+{tr:"c",name:"Apostles' Fast (Orthodox)",ref:"Acts 13:2-3",desc:"Begins the Monday after All Saints Sunday and lasts until the feast of Saints Peter and Paul on June 29. Its length changes each year with Easter. Dates here follow the Revised Julian calendar; churches on the old calendar add 13 days.",get:y=>{const a=addD(easterO(y),57),b=FD(y,6,28);return a<=b?[[a,b]]:[]}},
+{tr:"c",name:"Dormition Fast (Orthodox)",ref:"Luke 1:46-55",desc:"Two weeks of fasting before the feast of the Dormition of the Virgin Mary on August 15. Dates follow the Revised Julian calendar; churches on the old calendar add 13 days.",get:y=>[[FD(y,8,1),FD(y,8,14)]]},
+{tr:"c",name:"Nativity Fast (Orthodox)",ref:"Matthew 1",desc:"Forty days of preparation before Christmas, beginning November 15. Dates follow the Revised Julian calendar; churches on the old calendar add 13 days. Western Christians keep Advent as a season of prayer and light fasting.",get:y=>[[FD(y,11,15),FD(y,12,24)]]},
+{tr:"j",tm:"m",name:"Fast of the Firstborn (Ta'anit Bechorot)",ref:"Exodus 12:29-30",desc:"Observed on 14 Nisan, the day before Passover, by firstborn sons in remembrance of the firstborn who were spared in Egypt. Many communities complete a study session (siyum) so that the fast is not needed. If it falls on Shabbat, it moves to Thursday.",get:y=>heb(y,["nis|14"],-2)},
+{tr:"j",tm:"m",name:"Fast of Esther (Ta'anit Esther)",ref:"Esther 4:16",desc:"Kept on 13 Adar, the day before Purim, remembering the fast of Esther and the Jewish people before they faced their enemies. In a leap year it is kept in Adar II. If it falls on Shabbat, it moves to Thursday.",get:y=>heb(y,["adar|13","adar2|13"],-2)},
+{tr:"j",tm:"m",name:"Seventeenth of Tammuz (Shiva Asar b'Tammuz)",ref:"Jeremiah 39:2; Zechariah 8:19",desc:"Remembers the day the walls of Jerusalem were breached. It begins the three weeks of mourning that lead to Tisha B'Av. Postponed to the next day if it falls on Shabbat.",get:y=>heb(y,["tam|17"],1)},
+{tr:"j",tm:"M",name:"Tisha B'Av (9 Av)",ref:"2 Kings 25:8-9; Lamentations 1",desc:"The saddest day of the Jewish year, mourning the destruction of both Temples and other tragedies. A full fast from sunset to nightfall of about 25 hours, with Lamentations read. Postponed to the next day if it falls on Shabbat.",get:y=>heb(y,["av|9"],1)},
+{tr:"j",tm:"m",name:"Fast of Gedaliah (Tzom Gedaliah)",ref:"Jeremiah 41:1-2; 2 Kings 25:25",desc:"Kept the day after Rosh Hashanah, remembering the killing of Gedaliah, the governor of Judah. It falls among the Ten Days of Repentance. Postponed to the next day if it falls on Shabbat.",get:y=>heb(y,["tis|3"],1)},
+{tr:"j",tm:"M",name:"Yom Kippur (Day of Atonement)",ref:"Leviticus 16:29-31; 23:27-32",desc:"The holiest day, on 10 Tishri. A full fast of about 25 hours, from sunset to nightfall, with no food or drink, and a day of prayer and repentance. It is never postponed.",get:y=>heb(y,["tis|10"],0)},
+{tr:"j",tm:"m",name:"Tenth of Tevet (Asara b'Tevet)",ref:"2 Kings 25:1; Ezekiel 24:1-2",desc:"Remembers the start of the Babylonian siege of Jerusalem. A fast from dawn to nightfall. It can fall on a Friday, and then the fast ends before Shabbat begins.",get:y=>heb(y,["tev|10"],0)},
+{tr:"i",tm:"i",name:"Ramadan",ref:"Qur'an 2:183-185",desc:"The month of fasting, the fourth pillar of Islam. Muslims who are able abstain from food, drink, and marital relations from dawn (Fajr) until sunset (Maghrib), and the month ends with Eid al-Fitr. The start depends on the sighting of the new moon, so it may differ by a day from the date here.",get:y=>hij(y,9,1,30)},
+{tr:"i",tm:"i",name:"Six days of Shawwal",ref:"Sunnah (Sahih Muslim)",desc:"A recommended fast of six days in the month of Shawwal after Ramadan. They may be kept together or spread through the month. The dates shown are the 2nd to the 7th, right after Eid.",get:y=>hij(y,10,2,7)},
+{tr:"i",tm:"i",name:"First nine days of Dhul Hijjah",ref:"Sunnah",desc:"Fasting during the first nine days of the month of the pilgrimage is encouraged, especially the ninth day.",get:y=>hij(y,12,1,9)},
+{tr:"i",tm:"i",name:"Day of Arafah (9 Dhul Hijjah)",ref:"Sunnah (Sahih Muslim)",desc:"A highly recommended fast for Muslims who are not on pilgrimage. It falls on the day the pilgrims stand at Arafat.",get:y=>hij(y,12,9,9)},
+{tr:"i",tm:"i",name:"Tasu'a and Ashura (9 and 10 Muharram)",ref:"Sunnah",desc:"Fasting on the tenth of Muharram, Ashura, is recommended, along with the ninth. It is remembered as the day God saved Musa (Moses) and his people.",get:y=>hij(y,1,9,10)},
+{tr:"i",tm:"i",group:1,name:"The White Days (13, 14 and 15 of each month)",ref:"Sunnah",desc:"A recommended fast on the three bright days of every Hijri month, when the moon is full or nearly full.",get:y=>{let r=[];for(let m=1;m<=12;m++)r=r.concat(hij(y,m,13,15));return r}},
+{tr:"i",noFast:1,group:1,name:"Days when fasting is not allowed",ref:"Sunnah",desc:"Fasting is forbidden on Eid al-Fitr (1 Shawwal), and on Eid al-Adha (10 Dhul Hijjah) and the three days after it, the days of Tashreeq (11 to 13 Dhul Hijjah). The dates shown are those Eid days.",get:y=>hij(y,10,1,1).concat(hij(y,12,10,13))}];
+const FREC=[
+{tr:"c",name:"Wednesdays and Fridays",desc:"An early Christian practice (Didache 8) still kept by Orthodox Christians and some others. Fridays remember the crucifixion, and Wednesdays the betrayal of Jesus. Catholics abstain from meat on Fridays, at least during Lent."},
+{tr:"c",name:"The Daniel Fast",desc:"A partial fast of fruits, vegetables, grains, and water, based on Daniel 10:2-3. It is usually kept for 21 days at a time chosen by each person or church."},
+{tr:"i",name:"Mondays and Thursdays",desc:"A weekly voluntary fast taught in the Sunnah. Many Muslims keep these days throughout the year."}];
+function fastTimes(f,a,b){
+  if(!f.tm)return"";if(PT.lat==null)return"Set your location in Prayer Times to see fast start and end times.";
+  const t=ptCompute(a),first=a.getTime()!==b.getTime()?" (first day; times shift daily)":"";
+  if(f.tm==="i")return"Fast from Fajr "+ptFmt(t.fajr,a)+" until Maghrib "+ptFmt(t.maghrib,a)+first;
+  if(f.tm==="m")return"Fast from dawn "+ptFmt(t.alot,a)+" until nightfall "+ptFmt(t.tzeit,a);
+  const p=addD(a,-1),tp=ptCompute(p);return"Begins at sunset "+ptFmt(tp.sunset,p)+" the evening before, and ends at nightfall "+ptFmt(t.tzeit,a);
+}
+function fastRender(){
+  const y=FS.y,td=new Date();td.setHours(0,0,0,0);$("fastYear").textContent=y;
+  document.querySelectorAll("[data-fastf]").forEach(b=>{const on=b.dataset.fastf===FS.f;b.classList.toggle("primary",on);b.classList.toggle("secondary",!on)});
+  const rows=[],fd=d=>d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  FASTS.forEach(f=>{if(FS.f!=="all"&&f.tr!==FS.f)return;let rr=[];try{rr=f.get(y)}catch(_){}if(f.group&&rr.length)rows.push({f,a:rr[0][0],b:rr[rr.length-1][1],list:rr});else rr.forEach(([a,b])=>rows.push({f,a,b}))});
+  rows.sort((p,q)=>p.a-q.a);
+  const fs=d=>d.toLocaleDateString(undefined,{month:"short",day:"numeric"}),nx=y===td.getFullYear()?rows.find(r=>r.b>=td&&!r.f.noFast&&!r.list):null;
+  const card=(col,tag,name,dates,times,desc,ref,next)=>'<div class="card" style="border-left:5px solid '+col+'"><span class="pill" style="background:'+col+';color:#fff">'+tag+'</span>'+(next||"")+'<h3 style="margin:8px 0 4px">'+escapeHtml(name)+'</h3>'+(dates?'<div><b>'+escapeHtml(dates)+'</b></div>':"")+(times?'<div class="muted">'+escapeHtml(times)+'</div>':"")+'<p>'+escapeHtml(desc)+'</p><p class="muted">'+escapeHtml(ref||"")+'</p></div>';
+  let h=rows.length?rows.map(r=>{const same=r.a.getTime()===r.b.getTime(),nd=Math.round((r.a-td)/864e5),isN=nx===r;
+    return card(FCOL[r.f.tr],r.f.noFast?"Islamic · Not a fasting day":FTR[r.f.tr],r.f.name,r.list?r.list.map(([a,b])=>a.getTime()===b.getTime()?fs(a):fs(a)+" to "+fs(b)).join("; "):same?fd(r.a):fd(r.a)+" to "+fd(r.b),fastTimes(r.f,r.a,r.b),r.f.desc,r.f.ref,isN?' <span class="pill">Next'+(nd>0?" · in "+nd+" days":" · now")+'</span>':"")}).join(""):'<div class="card"><p class="muted">No fasts of this kind fall in '+y+'.</p></div>';
+  h+='<div class="card"><h2>Weekly and personal fasts</h2>'+FREC.filter(r=>FS.f==="all"||r.tr===FS.f).map(r=>'<div style="border-left:5px solid '+FCOL[r.tr]+';padding-left:10px;margin:10px 0"><b>'+escapeHtml(r.name)+'</b> <span class="muted">('+FTR[r.tr]+')</span><p>'+escapeHtml(r.desc)+'</p></div>').join("")+'</div>';
+  $("fastList").innerHTML=h;
+  $("fastNote").textContent="Fasting customs differ between traditions, communities, and individuals. Anyone who is ill, pregnant, nursing, elderly, or a child should speak with a doctor and a religious leader before fasting. Islamic dates use the Umm al-Qura calendar and can differ by a day from local moon sighting.";
+}
+fastRender();
+document.querySelector("[data-screen=fasts]")?.addEventListener("click",()=>fastRender());
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

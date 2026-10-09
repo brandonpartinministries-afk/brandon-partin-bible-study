@@ -17,7 +17,7 @@
 :root{--bg:#07111f;--panel:#0d1b2d;--panel2:#10243b;--text:#f4f7fb;--muted:#aeb9c8;--line:#29415d;--blue:#69a9ff;--silver:#d9e1ec;--good:#8bd3a8}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(180deg,#050c16,#091827 55%,#050b13);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
 button,input,textarea,select{font:inherit}button{cursor:pointer}
-.top{padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:20;background:#050c16;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid var(--line)}
+.top{padding-top:env(safe-area-inset-top,0px);position:sticky;top:0;z-index:20;background:rgba(5,12,22,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav{max-width:1100px;margin:auto;min-height:72px;padding:8px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px}
 .brand{display:flex;align-items:center;gap:10px}.brand img{width:48px;height:48px;object-fit:cover;border-radius:10px}.brand strong{font-size:15px}.brand small{display:block;color:var(--muted);font-size:12px}
 .navlinks{display:flex;gap:7px;flex-wrap:wrap}.navlinks #adminNav{font-weight:800}.navlinks button,.iconbtn{min-height:44px;border:1px solid var(--line);background:#0c1929;color:var(--text);border-radius:9px;padding:8px 11px}
@@ -44,18 +44,19 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .fday.today{outline:2px solid #3b82f6}.fday.empty{border:0;visibility:hidden}
 .fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
 .srmPlayer iframe,.srmPlayer video{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}.srmPlayer audio{width:100%}
+.ptItem{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden}.ptHead{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:transparent;color:inherit;border:0;padding:12px;font-size:1rem;min-height:48px}.ptBody{padding:0 12px 12px}.ptBody h4{margin:12px 0 4px}.arab{font-size:1.5rem;line-height:2;direction:rtl;text-align:right}.ptNext{background:rgba(245,197,66,.15)}
 mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}
 .chipbtn{width:auto;display:inline-block;min-height:34px;padding:4px 10px;margin:3px;font-size:.85rem}
 </style>
 <style>
 :root{--accent:#69a9ff;--shadow:0 14px 40px rgba(0,0,0,.22)}
 body{transition:background .2s,color .2s}.card,.tile{box-shadow:var(--shadow)}
-.navlinks{position:static;z-index:auto;backdrop-filter:none;-webkit-backdrop-filter:none;background:transparent;padding:8px 0}.navlinks button{min-height:44px}
+.navlinks{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);padding:8px 0}.navlinks button{min-height:44px}
 .searchRow{display:grid;grid-template-columns:1fr auto;gap:8px}.readingTools{display:flex;gap:8px;flex-wrap:wrap}.readingTools button{flex:1;min-width:90px}
 .settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.verseRow{line-height:1.8;padding:12px 0;border-bottom:1px solid var(--line);font-size:var(--verse-size,1.08rem)}.verseNum{display:inline-flex;min-width:30px;color:var(--accent);font-weight:800}.result{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}.tile{transition:transform .15s, border-color .15s}.tile:active{transform:scale(.98)}
 body.light{--bg:#f4f7fb;--panel:#fff;--panel2:#edf3fa;--text:#172033;--muted:#536078;--line:#d6deea;--blue:#1264c8;--silver:#24364d;--good:#167044;background:var(--bg);color:var(--text)}
 body.light{background:var(--bg)}
-body.light .top{background:#f4f7fb;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.light .top{background:rgba(244,247,251,.94)}
 body.light .navlinks button,body.light .iconbtn{background:#fff;color:var(--text)}
 body.light .navlinks button.active,body.light .primary{background:linear-gradient(135deg,#3d78bd,#1d4e88);color:#fff}
 body.light .card{background:#fff}
@@ -84,6 +85,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="concordance">Concordance</button>
     <button type="button" data-screen="feasts">Feasts</button>
     <button type="button" data-screen="sermons">Sermons</button>
+    <button type="button" data-screen="times">Prayer Times</button>
     <button type="button" data-screen="prayer">Prayer</button>
     <button type="button" data-screen="give">Give</button>
     <button type="button" data-screen="studies">Studies</button>
@@ -236,6 +238,25 @@ body.light .toast{background:#172033;color:#fff}
   </div>
   <div id="feastDetail" class="card"></div>
   <div class="card"><h2 id="feastListTitle">Dates this year</h2><div id="feastList"></div></div>
+</section>
+<section id="times" class="screen">
+  <div class="card"><span class="pill">🕰️ Prayer Times</span><h1>Hours of Prayer</h1>
+    <p class="muted">Pick a tradition, then tap any prayer for a guided walk-through. Islamic times are calculated for your location. Christian hours use traditional times, with morning and evening following sunrise and sunset.</p>
+    <div style="margin:8px 0"><button type="button" class="chipbtn primary" data-ptfaith="christian">✝️ Christian</button><button type="button" class="chipbtn secondary" data-ptfaith="islamic">☪️ Islamic</button></div>
+    <div class="stack"><div id="ptLoc" class="muted"></div>
+      <button type="button" class="secondary" data-action="ptLocate">📍 Use my location</button>
+      <div class="grid2"><input id="ptLat" inputmode="decimal" placeholder="Latitude"><input id="ptLng" inputmode="decimal" placeholder="Longitude"></div>
+      <button type="button" class="secondary" data-action="ptSaveLoc">Save coordinates</button>
+      <div class="grid2"><select id="ptMethod" aria-label="Calculation method"><option value="mwl">Muslim World League</option><option value="isna">ISNA (North America)</option><option value="egypt">Egyptian Authority</option><option value="karachi">Karachi</option><option value="umm">Umm al-Qura (Makkah)</option></select>
+      <select id="ptAsr" aria-label="Asr calculation"><option value="1">Asr: Standard (Shafi'i, Maliki, Hanbali)</option><option value="2">Asr: Hanafi</option></select></div></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px"><button type="button" class="secondary chipbtn" data-action="ptPrev" aria-label="Previous day">‹</button><b id="ptDate" style="flex:1;text-align:center"></b><button type="button" class="secondary chipbtn" data-action="ptNext" aria-label="Next day">›</button><button type="button" class="secondary chipbtn" data-action="ptToday">Today</button></div>
+  </div>
+  <div class="card"><h2>⏰ Alerts</h2>
+    <label style="display:flex;align-items:center;gap:8px"><input id="ptNotify" type="checkbox" style="width:auto">Alert me at each prayer time while this app is open</label>
+    <p class="muted">Alerts play a tone and show a notification only while this app is open on your phone. For alarms that ring even when the app is closed, add them to your calendar:</p>
+    <button type="button" class="primary" data-action="ptIcs">📅 Add alarms to my calendar (next 30 days)</button>
+    <p class="muted">This makes a file with one event and alarm for each time in the tradition you are viewing. Open it and your Calendar app adds them. Make another file each month, since the Islamic times shift through the year.</p></div>
+  <div class="card"><div id="ptList"></div><div id="ptExtra"></div><p class="muted" id="ptNote"></p></div>
 </section>
 <section id="sermons" class="screen">
   <div class="card"><span class="pill">🎥 Sermons</span><h1>Sermons</h1><p class="muted">Watch or listen to messages from Brandon Partin Ministries.</p>
@@ -611,6 +632,8 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const ptt=e.target.closest("[data-pttoggle]");if(ptt){const b=$("ptb-"+ptt.dataset.pttoggle);if(b)b.hidden=!b.hidden;return}
+ const ptf=e.target.closest("[data-ptfaith]");if(ptf){PT.faith=ptf.dataset.ptfaith;ptSave();ptRender();return}
  const sp=e.target.closest("[data-sermon-play]");if(sp){sermonPlay(+sp.dataset.sermonPlay);return}
  const sdl=e.target.closest("[data-sermon-del]");if(sdl){sermonDelete(+sdl.dataset.sermonDel);return}
  const fd=e.target.closest("[data-fday]");if(fd){feastPick(fd.dataset.fday);return}
@@ -647,6 +670,12 @@ function handleTap(e){
   case"adminLogout":adminLogout();break;
   case"todayStudy":openLesson(DOY-1);break;
   case"concSearch":concSearch();break;
+  case"ptIcs":ptIcs();break;
+  case"ptLocate":ptLocate();break;
+  case"ptSaveLoc":ptSaveLoc();break;
+  case"ptPrev":PT.off--;ptRender();break;
+  case"ptNext":PT.off++;ptRender();break;
+  case"ptToday":PT.off=0;ptRender();break;
   case"prayerSend":prayerSend();break;
   case"prayerCopy":prayerCopy();break;
   case"giveNow":{const u=safeUrl(SETTINGS.donateUrl);if(!u){toast("The giving link has not been set up yet");break}window.open(u,"_blank","noopener");break}
@@ -839,6 +868,145 @@ async function sermonPublish(){
 }
 document.querySelector("[data-screen=sermons]")?.addEventListener("click",()=>loadSermons());
 loadSettings();loadSermons();
+
+const LORDS="Our Father which art in heaven, Hallowed be thy name. Thy kingdom come, Thy will be done in earth, as it is in heaven. Give us this day our daily bread. And forgive us our debts, as we forgive our debtors. And lead us not into temptation, but deliver us from evil: For thine is the kingdom, and the power, and the glory, for ever. Amen. (Matthew 6:9-13, KJV)";
+const CHOURS=[
+{id:"vigils",n:"Vigils (Matins)",sub:"The night watch",key:"fixed",h:3,ref:[["Psalms",134],["Mark",1]],call:"Behold, bless ye the Lord, all ye servants of the Lord, which by night stand in the house of the Lord. (Psalm 134:1)",pray:"Lord, while the world sleeps You keep watch. I give You this quiet hour. Wake my heart to You. Bring to mind the sick, the grieving, travelers, and everyone working through the night, and watch over them and over me until morning comes. Amen.",refl:"What is on my heart that I can only say to God in the silence?"},
+{id:"lauds",n:"Lauds",sub:"Morning praise at sunrise",key:"sunrise",h:5.5,ref:[["Psalms",63],["Psalms",148]],call:"O God, thou art my God; early will I seek thee. (Psalm 63:1)",pray:"Good morning, Lord. This day is Your gift. Before anything else, I give You my first thoughts and my first words. Let Your love be the first thing I know today and the last thing I forget. Make me glad in Your mercy and ready to do what You set before me. Amen.",refl:"What is one way I can reflect Your love today?"},
+{id:"prime",n:"Prime",sub:"The first hour of the day",key:"fixed",h:6,ref:[["Psalms",5],["Psalms",90]],call:"O satisfy us early with thy mercy; that we may rejoice and be glad all our days. (Psalm 90:14)",pray:"Father, I place today's work in Your hands: my plans, my conversations, and my unfinished tasks. Order my steps. Keep me honest in small things, patient with people, and faithful in what no one sees. Let everything I do today be done for You. Amen.",refl:"What task or person needs my best attention today?"},
+{id:"terce",n:"Terce",sub:"The third hour",key:"fixed",h:9,ref:[["Acts",2],["Psalms",119]],call:"It is but the third hour of the day. (Acts 2:15)",pray:"Holy Spirit, You came with power on the day of Pentecost, and You are given to me too. Fill me again. Give me courage where I am afraid, wisdom where I am unsure, and love where I am tired. Lead me in what is right this morning. Amen.",refl:"Where do I need the Spirit's help most right now?"},
+{id:"sext",n:"Sext",sub:"The sixth hour",key:"fixed",h:12,ref:[["Psalms",121],["Luke",23]],call:"My help cometh from the Lord, which made heaven and earth. (Psalm 121:2)",pray:"Lord Jesus, at midday I stop and remember the cross, where You carried the weight of the world's sin and prayed for those who hurt You. Thank You. Forgive me for the ways I have fallen short this morning. Give me strength for the rest of the day, and mercy for the people I meet. Amen.",refl:"Who needs my forgiveness, or whose forgiveness do I need?"},
+{id:"none",n:"None",sub:"The ninth hour",key:"fixed",h:15,ref:[["Acts",3],["Psalms",130]],call:"Out of the depths have I cried unto thee, O Lord. (Psalm 130:1)",pray:"Merciful God, the afternoon is long and I am weary. Look on me in my weakness. Hear my prayer for those I love, for those who are suffering, and for the work I have not finished. Renew my strength, and let me end the day well. Amen.",refl:"What burden can I lay down before You right now?"},
+{id:"vespers",n:"Vespers",sub:"Evening prayer at sunset",key:"sunset",h:18,ref:[["Psalms",141],["Psalms",113]],call:"Let my prayer be set forth before thee as incense. (Psalm 141:2)",pray:"Lord, the day is ending and I give thanks. For food, for friends, for every good thing, and even for what was hard. Where I failed, forgive me. Where I was helped, thank You. Light a lamp in my heart tonight and gather up the day into Your care. Amen.",refl:"What is one thing from today I am thankful for?"},
+{id:"compline",n:"Compline",sub:"Night prayer before sleep",key:"fixed",h:21,ref:[["Psalms",4],["Psalms",91]],call:"I will both lay me down in peace, and sleep: for thou, Lord, only makest me dwell in safety. (Psalm 4:8)",pray:"Into Your hands, Lord, I commit my spirit and all those I love. Forgive what I have done wrong today and heal what has been broken. Keep us safe through the night, and let me wake in Your peace. Guard the sick and the lonely, and give rest to the weary. Amen.",refl:"Is there anything I need to release before I sleep?"}];
+const IMETH={mwl:{fa:18,isha:17},isna:{fa:15,isha:15},egypt:{fa:19.5,isha:17.5},karachi:{fa:18,isha:18},umm:{fa:18.5,ishaMin:90}};
+const IPRAY=[
+{id:"fajr",n:"Fajr",ar:"الفجر",key:"fajr",fard:"2",sun:"2 sunnah before Fajr",aloud:"Recite aloud",note:"The dawn prayer, prayed between first light and sunrise.",rak:"Two rak'ah. In each one stand, recite Al-Fatiha and a short surah, bow, rise, and prostrate twice. Sit for the tashahhud after the second rak'ah, then end with the salam."},
+{id:"dhuhr",n:"Dhuhr",ar:"الظهر",key:"dhuhr",fard:"4",sun:"Sunnah before and after (2 to 4 before, 2 after; this varies by school)",aloud:"Recite silently",note:"The midday prayer, after the sun passes its highest point.",rak:"Four rak'ah. Pray two, sit for the tashahhud, stand for the third and fourth reciting Al-Fatiha only, and finish with the final tashahhud, the prayer on the Prophet, and the salam."},
+{id:"asr",n:"Asr",ar:"العصر",key:"asr",fard:"4",sun:"4 sunnah before (recommended)",aloud:"Recite silently",note:"The afternoon prayer, until the sun begins to set.",rak:"Four rak'ah, prayed the same way as Dhuhr."},
+{id:"maghrib",n:"Maghrib",ar:"المغرب",key:"maghrib",fard:"3",sun:"2 sunnah after",aloud:"Recite aloud in the first two",note:"The sunset prayer, right after the sun has set.",rak:"Three rak'ah. Pray two, sit for the tashahhud, stand for the third reciting Al-Fatiha only, then sit for the final tashahhud, the prayer on the Prophet, and the salam."},
+{id:"isha",n:"Isha",ar:"العشاء",key:"isha",fard:"4",sun:"2 sunnah after, then Witr (1 or 3 rak'ah)",aloud:"Recite aloud in the first two",note:"The night prayer, once the twilight has gone.",rak:"Four rak'ah, prayed like Dhuhr. Witr is prayed afterwards, before sleep or in the last part of the night."}];
+const IOPT=[
+{id:"duha",n:"Duha (optional)",ar:"الضحى",key:"duha",note:"A voluntary prayer in the morning after the sun has risen, pray 2 to 8 rak'ah in pairs.",rak:""},
+{id:"tahajjud",n:"Tahajjud (optional)",ar:"التهجد",key:"tahajjud",note:"A voluntary night prayer, best in the last third of the night until Fajr. Pray in pairs of rak'ah and make personal dua.",rak:""}];
+const SALAH=`<h4>Before you pray</h4><p>Be clean and in wudu. Wudu: say <i>Bismillah</i>; wash the hands three times; rinse the mouth and nose three times; wash the face three times; wash the arms to the elbows three times, right then left; wipe the head once; wipe the ears; wash the feet to the ankles three times, right then left. Wear clean, modest clothes and stand on a clean place facing the Qibla.</p>
+<h4>1. Intention and Takbir</h4><p>Make the intention in your heart for the prayer you are praying. Raise your hands to your ears or shoulders and say:</p><p class="arab">اللّٰهُ أَكْبَر</p><p><i>Allahu akbar</i>: God is the Greatest. Fold your hands on your chest.</p>
+<h4>2. Recitation (standing)</h4><p>Optionally begin with <i>A'udhu billahi minash-shaytanir-rajim</i> (I seek refuge in God from the cursed devil) and <i>Bismillah</i>. Then recite Al-Fatiha:</p>
+<p class="arab">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ۝ الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ ۝ الرَّحْمَٰنِ الرَّحِيمِ ۝ مَالِكِ يَوْمِ الدِّينِ ۝ إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ ۝ اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ ۝ صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ</p>
+<p><i>Bismillahir-rahmanir-rahim. Alhamdu lillahi rabbil-'alamin. Ar-rahmanir-rahim. Maliki yawmid-din. Iyyaka na'budu wa iyyaka nasta'in. Ihdinas-siratal-mustaqim. Siratal-ladhina an'amta 'alayhim, ghayril-maghdubi 'alayhim wa lad-dallin.</i></p>
+<p>Meaning: In the name of God, the Most Gracious, the Most Merciful. Praise be to God, Lord of all the worlds, the Most Gracious, the Most Merciful, Master of the Day of Judgment. You alone we worship, and You alone we ask for help. Guide us on the straight path, the path of those You have blessed, not of those who earned anger, nor of those who went astray.</p>
+<p>In the first two rak'ah add a short surah, for example Al-Ikhlas:</p><p class="arab">قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ</p><p><i>Qul huwallahu ahad. Allahus-samad. Lam yalid wa lam yulad. Wa lam yakun lahu kufuwan ahad.</i></p>
+<h4>3. Ruku (bowing)</h4><p>Say <i>Allahu akbar</i> and bow with a straight back, hands on knees. Say three times:</p><p class="arab">سُبْحَانَ رَبِّيَ الْعَظِيمِ</p><p><i>Subhana rabbiyal-'azim</i>: Glory to my Lord, the Almighty. Rise saying <i>Sami'allahu liman hamidah</i> (God hears those who praise Him), then <i>Rabbana wa lakal-hamd</i> (Our Lord, all praise is Yours).</p>
+<h4>4. Sujud (prostration)</h4><p>Say <i>Allahu akbar</i> and prostrate with forehead, nose, both palms, knees, and toes on the ground. Say three times:</p><p class="arab">سُبْحَانَ رَبِّيَ الْأَعْلَى</p><p><i>Subhana rabbiyal-a'la</i>: Glory to my Lord, the Most High. Sit up with <i>Allahu akbar</i>, pause, then make a second sujud the same way. That completes one rak'ah.</p>
+<h4>5. Tashahhud (sitting)</h4><p>After the second rak'ah, and at the end of the last one, sit and say:</p><p><i>At-tahiyyatu lillahi was-salawatu wat-tayyibat. As-salamu 'alayka ayyuhan-nabiyyu wa rahmatullahi wa barakatuh. As-salamu 'alayna wa 'ala 'ibadillahis-salihin. Ash-hadu an la ilaha illallah, wa ash-hadu anna Muhammadan 'abduhu wa rasuluh.</i></p><p>Meaning: All greetings, prayers, and good words belong to God. Peace be upon you, O Prophet, and God's mercy and blessings. Peace be upon us and upon God's righteous servants. I bear witness that there is no god but God, and I bear witness that Muhammad is His servant and messenger. In the final sitting, add the prayer on the Prophet (salawat) as taught to you, and then a personal dua.</p>
+<h4>6. Taslim (ending)</h4><p>Turn your head to the right and say <i>As-salamu 'alaykum wa rahmatullah</i>, then to the left and say it again.</p>
+<h4>After the prayer</h4><p>Say <i>Astaghfirullah</i> three times, then <i>Subhanallah</i> 33 times, <i>Alhamdulillah</i> 33 times, and <i>Allahu akbar</i> 34 times. Read Ayat al-Kursi (Qur'an 2:255) and make dua from your heart.</p>
+<h4>The call to prayer (Adhan)</h4><p><i>Allahu akbar</i> (4 times). <i>Ash-hadu an la ilaha illallah</i> (2). <i>Ash-hadu anna Muhammadan rasulullah</i> (2). <i>Hayya 'alas-salah</i> (2). <i>Hayya 'alal-falah</i> (2). <i>Allahu akbar</i> (2). <i>La ilaha illallah</i> (1). At Fajr, after the second <i>Hayya 'alal-falah</i>, add <i>As-salatu khayrun minan-nawm</i> (prayer is better than sleep).</p>`;
+let PT={lat:null,lng:null,faith:"christian",method:"mwl",asr:1,off:0,notify:false};
+try{Object.assign(PT,JSON.parse(localStorage.getItem("bpm_pt")||"{}"))}catch(_){} PT.off=0;
+function ptSave(){try{localStorage.setItem("bpm_pt",JSON.stringify({lat:PT.lat,lng:PT.lng,faith:PT.faith,method:PT.method,asr:PT.asr,notify:PT.notify}))}catch(_){}}
+const _r=Math.PI/180,_S=a=>Math.sin(a*_r),_C=a=>Math.cos(a*_r),_T=a=>Math.tan(a*_r),_AS=x=>Math.asin(x)/_r,_AC=x=>Math.acos(x)/_r,_AT=x=>Math.atan(x)/_r,_AT2=(y,x)=>Math.atan2(y,x)/_r;
+const _fx=(a,b)=>a-b*Math.floor(a/b),_fh=a=>_fx(a,24);
+function _jd(y,m,d){if(m<=2){y--;m+=12}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5}
+function _sun(j){const D=j-2451545,g=_fx(357.529+0.98560028*D,360),q=_fx(280.459+0.98564736*D,360),L=_fx(q+1.915*_S(g)+0.02*_S(2*g),360),e=23.439-3.6e-7*D,RA=_fh(_AT2(_C(e)*_S(L),_C(L))/15);return{dec:_AS(_S(e)*_S(L)),eq:q/15-RA}}
+function ptCompute(dt){
+  const lat=PT.lat,lng=PT.lng,tz=-dt.getTimezoneOffset()/60,J=_jd(dt.getFullYear(),dt.getMonth()+1,dt.getDate())-lng/360,M=IMETH[PT.method]||IMETH.mwl;
+  const mid=t=>_fh(12-_sun(J+t).eq);
+  const ang=(a,t,ccw)=>{const d=_sun(J+t).dec,v=(-_S(a)-_S(d)*_S(lat))/(_C(d)*_C(lat));if(v<-1||v>1)return NaN;return mid(t)+(ccw?-1:1)*_AC(v)/15};
+  const asr=(f,t)=>{const d=_sun(J+t).dec;return ang(-_AT(1/(f+_T(Math.abs(lat-d)))),t,false)};
+  const adj=tz-lng/15;
+  const r={fajr:ang(M.fa,5/24,true),sunrise:ang(0.833,6/24,true),dhuhr:mid(12/24)+1/60,asr:asr(+PT.asr,13/24),sunset:ang(0.833,18/24,false)};
+  r.maghrib=r.sunset;r.isha=M.ishaMin?r.maghrib+M.ishaMin/60:ang(M.isha,18/24,false);
+  Object.keys(r).forEach(k=>r[k]+=adj);
+  r.duha=r.sunrise+20/60;
+  const night=_fh(r.fajr+24-r.maghrib)||0;r.tahajjud=_fh(r.maghrib+night*2/3);
+  return r;
+}
+function ptQibla(){const f1=PT.lat,f2=21.4225,dl=39.8262-PT.lng,b=_fx(_AT2(_S(dl)*_C(f2),_C(f1)*_S(f2)-_S(f1)*_C(f2)*_C(dl)),360),d=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(b/22.5)%16];return Math.round(b)+"° ("+d+")"}
+function ptFmt(h,base){if(!isFinite(h))return"n/a";h=_fh(h);let m=Math.round(h*60);const d=new Date(base.getFullYear(),base.getMonth(),base.getDate(),Math.floor(m/60)%24,m%60);return d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
+function ptLocate(){
+  if(!navigator.geolocation){toast("Location is not available. Enter coordinates instead.");return}
+  navigator.geolocation.getCurrentPosition(pos=>{PT.lat=+pos.coords.latitude.toFixed(4);PT.lng=+pos.coords.longitude.toFixed(4);ptSave();ptRender();toast("Location saved on this device")},()=>toast("Could not get your location. Allow location access or enter coordinates."),{timeout:12000});
+}
+function ptSaveLoc(){const a=parseFloat($("ptLat").value),b=parseFloat($("ptLng").value);if(!(a>=-90&&a<=90&&b>=-180&&b<=180)){toast("Enter a valid latitude and longitude");return}PT.lat=a;PT.lng=b;ptSave();ptRender();toast("Location saved")}
+function ptItem(id,head,right,body,next){return '<div class="ptItem'+(next?" ptNext":"")+'"><button type="button" class="ptHead" data-pttoggle="'+id+'"><span><b>'+head+'</b></span><span>'+right+'</span></button><div class="ptBody" id="ptb-'+id+'" hidden>'+body+'</div></div>'}
+function ptRender(){
+  const base=new Date();base.setDate(base.getDate()+PT.off);const isTd=PT.off===0,now=new Date();
+  $("ptDate").textContent=base.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+  document.querySelectorAll("[data-ptfaith]").forEach(b=>{b.classList.toggle("primary",b.dataset.ptfaith===PT.faith);b.classList.toggle("secondary",b.dataset.ptfaith!==PT.faith)});
+  const has=PT.lat!=null&&PT.lng!=null;
+  $("ptLoc").textContent=has?"Location: "+PT.lat+", "+PT.lng:"No location set yet.";
+  if(has){$("ptLat").value=PT.lat;$("ptLng").value=PT.lng}
+  $("ptMethod").value=PT.method;$("ptAsr").value=String(PT.asr);
+  document.querySelectorAll("#times .grid2").forEach((g,i)=>{if(i===1)g.hidden=PT.faith!=="islamic"});
+  let html="",extra="",times=has?ptCompute(base):null,rows=[];
+  const at=(h)=>new Date(base.getFullYear(),base.getMonth(),base.getDate(),0,Math.round(_fh(h)*60));
+  if(PT.faith==="christian"){
+    CHOURS.forEach(c=>{let h=c.h;if(times&&c.key==="sunrise"&&isFinite(times.sunrise))h=times.sunrise;if(times&&c.key==="sunset"&&isFinite(times.sunset))h=times.sunset;rows.push({c,h})});
+    const nx=isTd?rows.find(r=>at(r.h)>now):null;
+    html=rows.map(({c,h})=>{const refs=c.ref.map(([b,ch])=>'<button type="button" class="secondary chipbtn" data-readref="'+b+'|'+ch+'">📖 '+b+' '+ch+'</button>').join("");
+      return ptItem("c-"+c.id,escapeHtml(c.n)+'<br><small class="muted">'+escapeHtml(c.sub)+'</small>',ptFmt(h,base)+(nx&&nx.c===c?' <span class="pill">Next</span>':""),
+      '<h4>1. Begin</h4><p>In the name of the Father, and of the Son, and of the Holy Spirit. Amen.</p><h4>2. Call to prayer</h4><p><i>'+escapeHtml(c.call)+'</i></p><h4>3. Read</h4><p>'+refs+'</p><h4>4. Pray</h4><p>'+escapeHtml(c.pray)+'</p><h4>5. Reflect</h4><p>'+escapeHtml(c.refl)+'</p><h4>6. Close</h4><p>'+LORDS+'</p>',nx&&nx.c===c)}).join("");
+    $("ptNote").textContent="Traditions differ on the exact hours. These are the traditional times, and the prayers are written to guide you. Feel free to adapt them.";
+    extra="";
+  }else if(!has){
+    html='<p class="muted">Tap “Use my location” (or enter coordinates) to see today’s prayer times.</p>';$("ptNote").textContent="";
+  }else{
+    const list=IPRAY.map(x=>({x,h:times[x.key]}));
+    const nx=isTd?list.find(r=>isFinite(r.h)&&at(r.h)>now):null;
+    html='<p class="muted">Qibla direction: <b>'+ptQibla()+'</b> clockwise from true north. Sunrise: <b>'+ptFmt(times.sunrise,base)+'</b>.</p>'+list.map(({x,h})=>ptItem("i-"+x.id,escapeHtml(x.n)+' <span class="muted">'+x.ar+'</span><br><small class="muted">'+x.fard+' rak\'ah fard</small>',ptFmt(h,base)+(nx&&nx.x===x?' <span class="pill">Next</span>':""),
+      '<p>'+escapeHtml(x.note)+'</p><p><b>'+x.fard+' rak\'ah fard.</b> '+escapeHtml(x.aloud)+'. Sunnah: '+escapeHtml(x.sun)+'.</p><p>'+escapeHtml(x.rak)+'</p><p class="muted">For the full step by step, see How to pray below.</p>',nx&&nx.x===x)).join("")+
+      IOPT.map(x=>ptItem("i-"+x.id,escapeHtml(x.n)+' <span class="muted">'+x.ar+'</span>',ptFmt(times[x.key],base),'<p>'+escapeHtml(x.note)+'</p>',false)).join("");
+    extra=ptItem("how","How to pray (Salah), step by step","",SALAH,false);
+    $("ptNote").textContent="Times are calculated for your location using the method you chose and may differ from your local mosque by a few minutes. Follow your mosque or scholar where they differ. Wording and details vary by school, so learn the prayer from a qualified teacher.";
+  }
+  $("ptList").innerHTML=html;$("ptExtra").innerHTML=extra;$("ptNotify").checked=!!PT.notify;ptSchedule();
+}
+let ptTimers=[],ptAC=null;
+function ptEvents(base,faith){
+  const out=[],has=PT.lat!=null&&PT.lng!=null,t=has?ptCompute(base):null;
+  const at=h=>new Date(base.getFullYear(),base.getMonth(),base.getDate(),0,Math.round(_fh(h)*60));
+  if(faith==="christian"){CHOURS.forEach(c=>{let h=c.h;if(t&&c.key==="sunrise"&&isFinite(t.sunrise))h=t.sunrise;if(t&&c.key==="sunset"&&isFinite(t.sunset))h=t.sunset;out.push({n:c.n,d:at(h),sub:c.sub})})}
+  else if(has){IPRAY.forEach(x=>{if(isFinite(t[x.key]))out.push({n:x.n,d:at(t[x.key]),sub:"Islamic prayer"})})}
+  return out;
+}
+function ptBeep(prime){
+  try{ptAC=ptAC||new (window.AudioContext||window.webkitAudioContext)();if(ptAC.state==="suspended")ptAC.resume();if(prime)return;
+    [0,0.5].forEach(o=>{const osc=ptAC.createOscillator(),g=ptAC.createGain();osc.frequency.value=880;g.gain.setValueAtTime(0.0001,ptAC.currentTime+o);g.gain.exponentialRampToValueAtTime(0.4,ptAC.currentTime+o+0.03);g.gain.exponentialRampToValueAtTime(0.0001,ptAC.currentTime+o+0.4);osc.connect(g).connect(ptAC.destination);osc.start(ptAC.currentTime+o);osc.stop(ptAC.currentTime+o+0.45)});
+  }catch(_){}
+}
+function ptAlert(e){
+  const title="Time for "+e.n,body=e.sub+" · "+e.d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+  toast("🕰️ "+title);ptBeep();try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(_){}
+  try{if("Notification" in window&&Notification.permission==="granted"){
+    const show=()=>new Notification(title,{body,tag:"bpm-"+e.n});
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>r?r.showNotification(title,{body,tag:"bpm-"+e.n}):show(),()=>{try{show()}catch(_){}});else show();}}catch(_){}
+}
+function ptSchedule(){
+  ptTimers.forEach(clearTimeout);ptTimers=[];if(!PT.notify)return;
+  const now=Date.now(),base=new Date();
+  ptEvents(base,PT.faith).forEach(e=>{const ms=e.d-now;if(ms>0&&ms<864e5)ptTimers.push(setTimeout(()=>ptAlert(e),ms))});
+  ptTimers.push(setTimeout(ptSchedule,new Date(base.getFullYear(),base.getMonth(),base.getDate()+1,0,1)-now));
+}
+function ptIcs(){
+  const two=n=>String(n).padStart(2,"0"),st=d=>d.getFullYear()+two(d.getMonth()+1)+two(d.getDate())+"T"+two(d.getHours())+two(d.getMinutes())+"00",esc=t=>String(t).replace(/([,;\\])/g,"\\$1");
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z",L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Brandon Partin Ministries//Prayer Times//EN","CALSCALE:GREGORIAN"];let n=0;
+  for(let i=0;i<30;i++){const b=new Date();b.setDate(b.getDate()+i);ptEvents(b,PT.faith).forEach(e=>{n++;
+    L.push("BEGIN:VEVENT","UID:bpm-"+PT.faith+"-"+st(e.d)+"-"+e.n.replace(/\W/g,"")+"@bpm","DTSTAMP:"+stamp,"DTSTART:"+st(e.d),"DTEND:"+st(new Date(e.d.getTime()+15*60000)),"SUMMARY:"+esc("Prayer: "+e.n),"DESCRIPTION:"+esc(e.sub+". Open the Prayer Times tab in the app for the guided prayer."),"BEGIN:VALARM","TRIGGER:PT0M","ACTION:DISPLAY","DESCRIPTION:"+esc("Prayer: "+e.n),"END:VALARM","END:VEVENT")})}
+  if(!n){toast("Set your location first, then try again");return}
+  L.push("END:VCALENDAR");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar"}));a.download=PT.faith+"-prayer-times.ics";document.body.appendChild(a);a.click();a.remove();toast("Calendar file ready. Open it to add the alarms.");
+}
+$("ptNotify").addEventListener("change",async e=>{
+  PT.notify=e.target.checked;ptSave();
+  if(PT.notify){ptBeep(true);
+    if(!("Notification" in window))toast("Alerts will show inside the app while it is open");
+    else{if(Notification.permission==="default"){try{await Notification.requestPermission()}catch(_){}}if(Notification.permission==="denied")toast("Notifications are blocked in your browser settings. A tone and in-app alert will still play.");else toast("Alerts are on while this app is open")}}
+  ptSchedule();
+});
+$("ptMethod").addEventListener("change",e=>{PT.method=e.target.value;ptSave();ptRender()});
+$("ptAsr").addEventListener("change",e=>{PT.asr=+e.target.value;ptSave();ptRender()});
+ptRender();
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

@@ -281,7 +281,7 @@ body.light .toast{background:#172033;color:#fff}
 </section>
 <section id="fasts" class="screen">
   <div class="card"><span class="pill">🍞 Fasting</span><h1>Fasts</h1>
-    <p class="muted">Christian, Jewish, and Islamic fasts for the year you are viewing, with dates worked out from each calendar. Set your location on the Prayer Times tab to also see the daily start and end times.</p>
+    <p class="muted">Christian, Jewish, and Islamic fasts: the weekly fasts first, then the fasts for the year you are viewing, with dates worked out from each calendar. Set your location on the Prayer Times tab to also see the daily start and end times.</p>
     <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><button type="button" class="secondary chipbtn" data-action="fastPrev" aria-label="Previous year">‹</button><b id="fastYear" style="flex:1;text-align:center"></b><button type="button" class="secondary chipbtn" data-action="fastNext" aria-label="Next year">›</button><button type="button" class="secondary chipbtn" data-action="fastToday">This year</button></div>
     <div><button type="button" class="chipbtn primary" data-fastf="all">All</button><button type="button" class="chipbtn secondary" data-fastf="c">✝️ Christian</button><button type="button" class="chipbtn secondary" data-fastf="j">✡️ Jewish</button><button type="button" class="chipbtn secondary" data-fastf="i">☪️ Islamic</button></div>
     <p class="muted" id="fastNote"></p></div>
@@ -1125,15 +1125,27 @@ const FASTS=[
 {tr:"i",tm:"i",group:1,name:"The White Days (13, 14 and 15 of each month)",ref:"Sunnah",desc:"A recommended fast on the three bright days of every Hijri month, when the moon is full or nearly full.",get:y=>{let r=[];for(let m=1;m<=12;m++)r=r.concat(hij(y,m,13,15));return r}},
 {tr:"i",noFast:1,group:1,name:"Days when fasting is not allowed",ref:"Sunnah",desc:"Fasting is forbidden on Eid al-Fitr (1 Shawwal), and on Eid al-Adha (10 Dhul Hijjah) and the three days after it, the days of Tashreeq (11 to 13 Dhul Hijjah). The dates shown are those Eid days.",get:y=>hij(y,10,1,1).concat(hij(y,12,10,13))}];
 const FREC=[
-{tr:"c",name:"Wednesdays and Fridays",desc:"An early Christian practice (Didache 8) still kept by Orthodox Christians and some others. Fridays remember the crucifixion, and Wednesdays the betrayal of Jesus. Catholics abstain from meat on Fridays, at least during Lent."},
-{tr:"c",name:"The Daniel Fast",desc:"A partial fast of fruits, vegetables, grains, and water, based on Daniel 10:2-3. It is usually kept for 21 days at a time chosen by each person or church."},
-{tr:"i",name:"Mondays and Thursdays",desc:"A weekly voluntary fast taught in the Sunnah. Many Muslims keep these days throughout the year."}];
+{tr:"c",name:"The Daniel Fast",desc:"A partial fast of fruits, vegetables, grains, and water, based on Daniel 10:2-3. It is usually kept for 21 days at a time chosen by each person or church."}];
+const FWEEK=[
+{tr:"c",name:"Wednesdays and Fridays",days:[3,5],ref:"Didache 8; Acts 13:2-3",desc:"An early Christian practice still kept by Orthodox Christians and some others. Fridays remember the crucifixion of Jesus, and Wednesdays the day of the betrayal. Orthodox Christians avoid meat, dairy, and eggs on these days, except in fast-free weeks such as Bright Week. Catholics keep Fridays as days of penance and avoid meat, at least in Lent, and may choose another form of penance at other times."},
+{tr:"j",tm:"m",name:"Mondays and Thursdays (optional)",days:[1,4],ref:"Luke 18:12",desc:"A traditional voluntary fast. Monday and Thursday were long kept as days of prayer and repentance, and some devout Jews fast on them out of devotion. It is a personal custom and not a requirement, and it is never kept on Shabbat or on a festival. It runs from dawn to nightfall."},
+{tr:"i",tm:"i",name:"Mondays and Thursdays",days:[1,4],ref:"Sunnah",desc:"A weekly voluntary fast taught in the Sunnah and kept from Fajr to Maghrib. Many Muslims keep these days all year round. It is not kept on the days when fasting is not allowed, such as the two Eids."}];
 function fastTimes(f,a,b){
   if(!f.tm)return"";if(PT.lat==null)return"Set your location in Prayer Times to see fast start and end times.";
   const t=ptCompute(a),first=a.getTime()!==b.getTime()?" (first day; times shift daily)":"";
   if(f.tm==="i")return"Fast from Fajr "+ptFmt(t.fajr,a)+" until Maghrib "+ptFmt(t.maghrib,a)+first;
   if(f.tm==="m")return"Fast from dawn "+ptFmt(t.alot,a)+" until nightfall "+ptFmt(t.tzeit,a);
   const p=addD(a,-1),tp=ptCompute(p);return"Begins at sunset "+ptFmt(tp.sunset,p)+" the evening before, and ends at nightfall "+ptFmt(t.tzeit,a);
+}
+function fastWeek(card){
+  const td=new Date();td.setHours(12,0,0,0);const dn=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],dl=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],list=FWEEK.filter(w=>FS.f==="all"||w.tr===FS.f);
+  let h='<div class="card"><h2>Weekly fasts</h2><p class="muted">Fasts that repeat every week. Your next seven days:</p><div class="fgrid">';
+  for(let i=0;i<7;i++){const d=addD(td,i),dots=list.filter(w=>w.days.includes(d.getDay())).map(w=>'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+FCOL[w.tr]+';margin:0 1px"></span>').join("");
+    h+='<div style="text-align:center;font-size:.8rem;padding:4px 0;border:1px solid rgba(128,128,128,.25);border-radius:8px'+(i===0?";outline:2px solid #3b82f6":"")+'"><div class="muted">'+dn[d.getDay()]+'</div><b>'+d.getDate()+'</b><div style="min-height:12px">'+dots+'</div></div>'}
+  h+='</div><p class="muted" style="margin:8px 0 0"><span style="color:'+FCOL.c+'">●</span> Christian <span style="color:'+FCOL.j+'">●</span> Jewish <span style="color:'+FCOL.i+'">●</span> Islamic</p></div>';
+  return h+list.map(w=>{let n=null;for(let i=0;i<7&&!n;i++){const d=addD(td,i);if(w.days.includes(d.getDay()))n=[d,i]}
+    const when=n[1]===0?"today":n[1]===1?"tomorrow":n[0].toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+    return card(FCOL[w.tr],FTR[w.tr]+" · Weekly",w.name,"Every "+w.days.map(x=>dl[x]).join(" and ")+". Next: "+when,fastTimes({tm:w.tm},n[0],n[0]),w.desc,w.ref,"")}).join("");
 }
 function fastRender(){
   const y=FS.y,td=new Date();td.setHours(0,0,0,0);$("fastYear").textContent=y;
@@ -1145,7 +1157,7 @@ function fastRender(){
   const card=(col,tag,name,dates,times,desc,ref,next)=>'<div class="card" style="border-left:5px solid '+col+'"><span class="pill" style="background:'+col+';color:#fff">'+tag+'</span>'+(next||"")+'<h3 style="margin:8px 0 4px">'+escapeHtml(name)+'</h3>'+(dates?'<div><b>'+escapeHtml(dates)+'</b></div>':"")+(times?'<div class="muted">'+escapeHtml(times)+'</div>':"")+'<p>'+escapeHtml(desc)+'</p><p class="muted">'+escapeHtml(ref||"")+'</p></div>';
   let h=rows.length?rows.map(r=>{const same=r.a.getTime()===r.b.getTime(),nd=Math.round((r.a-td)/864e5),isN=nx===r;
     return card(FCOL[r.f.tr],r.f.noFast?"Islamic · Not a fasting day":FTR[r.f.tr],r.f.name,r.list?r.list.map(([a,b])=>a.getTime()===b.getTime()?fs(a):fs(a)+" to "+fs(b)).join("; "):same?fd(r.a):fd(r.a)+" to "+fd(r.b),fastTimes(r.f,r.a,r.b),r.f.desc,r.f.ref,isN?' <span class="pill">Next'+(nd>0?" · in "+nd+" days":" · now")+'</span>':"")}).join(""):'<div class="card"><p class="muted">No fasts of this kind fall in '+y+'.</p></div>';
-  h+='<div class="card"><h2>Weekly and personal fasts</h2>'+FREC.filter(r=>FS.f==="all"||r.tr===FS.f).map(r=>'<div style="border-left:5px solid '+FCOL[r.tr]+';padding-left:10px;margin:10px 0"><b>'+escapeHtml(r.name)+'</b> <span class="muted">('+FTR[r.tr]+')</span><p>'+escapeHtml(r.desc)+'</p></div>').join("")+'</div>';
+  h=fastWeek(card)+h+'<div class="card"><h2>Personal fasts</h2>'+FREC.filter(r=>FS.f==="all"||r.tr===FS.f).map(r=>'<div style="border-left:5px solid '+FCOL[r.tr]+';padding-left:10px;margin:10px 0"><b>'+escapeHtml(r.name)+'</b> <span class="muted">('+FTR[r.tr]+')</span><p>'+escapeHtml(r.desc)+'</p></div>').join("")+'</div>';
   $("fastList").innerHTML=h;
   $("fastNote").textContent="Fasting customs differ between traditions, communities, and individuals. Anyone who is ill, pregnant, nursing, elderly, or a child should speak with a doctor and a religious leader before fasting. Islamic dates use the Umm al-Qura calendar and can differ by a day from local moon sighting.";
 }

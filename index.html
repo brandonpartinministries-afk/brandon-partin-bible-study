@@ -86,6 +86,9 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="bible">Bible</button>
     <button type="button" data-screen="concordance">Concordance</button>
     <button type="button" data-screen="feasts">Feasts</button>
+    <button type="button" data-screen="reminders">Reminders</button>
+    <button type="button" data-screen="news">News</button>
+    <button type="button" data-screen="progress">Progress</button>
     <button type="button" data-screen="hebcal">Hebrew Calendar</button>
     <button type="button" data-screen="fasts">Fasts</button>
     <button type="button" data-screen="sermons">Sermons</button>
@@ -101,6 +104,7 @@ body.light .toast{background:#172033;color:#fff}
   </nav>
 </div>
 </header>
+<div id="offlineBar" hidden style="background:#b7950b;color:#fff;text-align:center;padding:6px;font-size:.9rem">📴 You are offline. Saved content, prayer times, and calendars still work.</div>
 
 <main>
 <section id="home" class="screen active">
@@ -124,6 +128,8 @@ body.light .toast{background:#172033;color:#fff}
     </div>
     <p id="hdNote" class="muted" style="margin-bottom:0;font-size:.85rem"></p>
     <button type="button" class="secondary" data-screen="hebcal" style="margin-top:10px">✡️ Open the Hebrew calendar</button></div>
+  <div class="card" id="votdCard"><span class="pill">📜 Verse of the day</span><h3 id="votdRef" style="margin:10px 0 4px"></h3><p id="votdText" class="quote"></p>
+    <button type="button" class="secondary chipbtn" id="votdOpen" data-ref="">📖 Open</button><button type="button" class="secondary chipbtn" data-action="votdShare">📤 Share</button></div>
   <div class="grid">
     <div class="tile"><b>📖 Bible</b><p>Read and search the full KJV Bible with Apocrypha.</p><button type="button" class="secondary" data-action="openBible">Open</button></div>
     <div class="tile"><b>📚 Studies</b><p>Work through guided Bible study lessons.</p><button type="button" class="secondary" data-action="openStudies">Study</button></div>
@@ -168,6 +174,9 @@ body.light .toast{background:#172033;color:#fff}
   <div class="card"><span class="pill">🙏 Prayer journal</span><h1>Prayer</h1>
     <textarea id="prayer" placeholder="Write your prayer..."></textarea><br><br>
     <button type="button" class="primary" data-action="savePrayer">Save prayer</button> <span id="prayerStatus" class="muted"></span>
+    <p class="muted">Your prayers are saved only on this device. Nobody else can read them.</p>
+    <div id="prayerFilter"></div><div id="prayerList"></div>
+    <button type="button" class="secondary" data-action="prayerExport">⬇ Download my prayers</button>
   </div>
   <div class="card"><span class="pill">📝 Personal notes</span><h2>Notes</h2>
     <textarea id="notes" placeholder="Write notes from your study..."></textarea><br><br>
@@ -192,9 +201,16 @@ body.light .toast{background:#172033;color:#fff}
         <input id="srmTitle" placeholder="Sermon title"><input id="srmSpeaker" placeholder="Speaker (optional)"><input id="srmDate" type="date"><textarea id="srmDesc" rows="3" placeholder="Short description (optional)"></textarea>
         <input id="srmLink" placeholder="YouTube link"><label class="muted">Or upload a file</label><input id="srmFile" type="file" accept="audio/*,video/*">
         <button type="button" class="primary" data-action="sermonPublish">Publish sermon</button></div></div>
+      <div class="card"><h2>📣 Post an announcement or event</h2><div class="stack">
+        <input id="newsTitle" placeholder="Title"><textarea id="newsBody" rows="3" placeholder="Details (optional)"></textarea>
+        <label class="muted">Event date and time (leave blank for a plain announcement)</label><input id="newsDate" type="date"><input id="newsTime" type="time">
+        <input id="newsLoc" placeholder="Location (optional)"><input id="newsLink" placeholder="Link, https://... (optional)">
+        <label style="display:flex;align-items:center;gap:8px"><input id="newsPin" type="checkbox" style="width:auto">Pin to the top</label>
+        <button type="button" class="primary" data-action="newsPublish">Post</button></div></div>
       <div class="card"><h2>⚙️ Site settings</h2><p class="muted">These show up for everyone once the setup file has been run in Supabase.</p><div class="stack">
         <label class="muted">Prayer request email</label><input id="setEmail" type="email" placeholder="name@example.com">
         <label class="muted">YouTube channel link</label><input id="setChannel" placeholder="https://www.youtube.com/@yourchannel">
+        <label class="muted">Live stream link (shows a Watch live button on the News tab)</label><input id="setLive" placeholder="https://...">
         <label class="muted">Donation link (PayPal, Stripe, Givelify, Tithe.ly, etc.)</label><input id="setDonateUrl" placeholder="https://...">
         <label class="muted">Donate button words</label><input id="setDonateLabel" placeholder="Give now">
         <label class="muted">Other ways to give (optional)</label><textarea id="setGiveNotes" rows="3" placeholder="Mail checks to ... / Cash App ..."></textarea>
@@ -225,7 +241,7 @@ body.light .toast{background:#172033;color:#fff}
 
 <section id="devotional" class="screen">
   <div class="card"><span class="pill">🌅 Daily devotional</span><h1 id="devTitle"></h1><p id="devText" class="quote"></p><p><b>Scripture:</b> <span id="devRef"></span></p>
-    <button type="button" class="primary" data-action="nextDevotional">Another devotional</button>
+    <button type="button" class="secondary" id="devDone" data-done="d|1">☐ Mark complete</button> <button type="button" class="primary" data-action="nextDevotional">Another devotional</button>
   </div>
   <div class="card"><span class="pill">📖 Published devotionals</span><h2>Devotional library</h2><p class="muted">Devotionals are published by the ministry administrator and shared with app users.</p><p id="devotionalStatus" class="muted"></p></div>
   <div class="grid" id="devotionalGrid"></div>
@@ -239,6 +255,11 @@ body.light .toast{background:#172033;color:#fff}
       <label style="display:flex;align-items:center;gap:8px"><input id="concForms" type="checkbox" style="width:auto">Include word endings</label></div>
     <div id="concLetters" style="margin-top:10px"></div><div id="concWords"></div>
   </div>
+  <div class="card"><span class="pill">🔢 Strong's</span><h2>Strong's numbers</h2>
+    <p class="muted">Look up a Strong's number (for example G26 or H430) or search a word. The dictionary is not built into the app. Put a strongs.json file next to index.html, or load one here. Results are only as accurate as your file.</p>
+    <div style="display:flex;gap:8px"><input id="strQ" placeholder="G26, H430, or a word" autocapitalize="none" style="flex:1;min-width:0"><button type="button" class="primary" data-action="strSearch" style="width:auto">Look up</button></div>
+    <label class="muted">Load a Strong's file</label><input id="strFile" type="file" accept=".json,application/json">
+    <p id="strStatus" class="muted">No Strong's data loaded.</p><div id="strOut"></div></div>
   <div id="concOut" class="card" hidden></div>
 </section>
 <section id="feasts" class="screen">
@@ -247,6 +268,7 @@ body.light .toast{background:#172033;color:#fff}
     <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><button type="button" class="secondary chipbtn" data-action="feastPrev" aria-label="Previous month">‹</button><b id="feastTitle" style="flex:1;text-align:center"></b><button type="button" class="secondary chipbtn" data-action="feastNext" aria-label="Next month">›</button><button type="button" class="secondary chipbtn" data-action="feastToday">Today</button></div>
     <div id="feastDow" class="fgrid"></div><div id="feastGrid" class="fgrid"></div>
     <div id="feastLegend" style="margin-top:10px"></div>
+    <button type="button" class="secondary" data-screen="reminders" style="margin-top:10px">🔔 Remind me of the feasts</button>
   </div>
   <div id="feastDetail" class="card"></div>
   <div class="card"><h2 id="feastListTitle">Dates this year</h2><div id="feastList"></div></div>
@@ -279,12 +301,38 @@ body.light .toast{background:#172033;color:#fff}
   <div id="hcDetail" class="card"></div>
   <div class="card"><h2>This month</h2><div id="hcList"></div></div>
 </section>
+<section id="reminders" class="screen">
+  <div class="card"><span class="pill">🔔 Reminders</span><h1>Calendar Reminders</h1>
+    <p class="muted">Choose what you want to be reminded about. The app makes a calendar file for the next 12 months with alarms already set. Open the file and your phone's Calendar adds everything. The alarms ring even when this app is closed.</p>
+    <div class="stack">
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remFeasts" style="width:auto" checked>Feasts of the Lord (with a reminder that each feast begins at sunset)</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remShabbat" style="width:auto">Shabbat candle lighting and Shabbat ending (needs your location)</label>
+      <b>Fasts</b>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remC" style="width:auto">Christian fasts</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remJ" style="width:auto">Jewish fasts (with start and end times if your location is set)</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remI" style="width:auto">Islamic fasts (with start and end times if your location is set)</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remWeekly" style="width:auto">Also the weekly fasts for the traditions checked above</label>
+      <label class="muted">When should the alarms ring?</label>
+      <select id="remMode"><option value="both">The evening before and the morning of</option><option value="day">The morning of only</option><option value="eve">The evening before only</option></select>
+      <p id="remCount" class="muted"></p>
+      <button type="button" class="primary" data-action="remMake">📅 Make my calendar file</button>
+      <p class="muted">Timed items (Shabbat, fast start and end, and Ramadan suhoor and iftar) use the location you saved on the Prayer Times tab. Make a new file once a year.</p></div></div>
+</section>
+<section id="news" class="screen">
+  <div class="card"><span class="pill">📣 News</span><h1>Announcements and Events</h1><p class="muted">News and upcoming events from Brandon Partin Ministries.</p>
+    <button type="button" class="primary" id="newsLive" data-action="openLive" hidden>🔴 Watch live</button></div>
+  <div id="newsList"></div>
+</section>
+<section id="progress" class="screen">
+  <div class="card"><span class="pill">✅ Progress</span><h1>My Progress</h1><p class="muted">Mark each day's study and devotional complete. Your progress is saved only on this device.</p><div id="pgBody"></div></div>
+</section>
 <section id="fasts" class="screen">
   <div class="card"><span class="pill">🍞 Fasting</span><h1>Fasts</h1>
     <p class="muted">Christian, Jewish, and Islamic fasts: the weekly fasts first, then the fasts for the year you are viewing, with dates worked out from each calendar. Set your location on the Prayer Times tab to also see the daily start and end times.</p>
     <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><button type="button" class="secondary chipbtn" data-action="fastPrev" aria-label="Previous year">‹</button><b id="fastYear" style="flex:1;text-align:center"></b><button type="button" class="secondary chipbtn" data-action="fastNext" aria-label="Next year">›</button><button type="button" class="secondary chipbtn" data-action="fastToday">This year</button></div>
     <div><button type="button" class="chipbtn primary" data-fastf="all">All</button><button type="button" class="chipbtn secondary" data-fastf="c">✝️ Christian</button><button type="button" class="chipbtn secondary" data-fastf="j">✡️ Jewish</button><button type="button" class="chipbtn secondary" data-fastf="i">☪️ Islamic</button></div>
-    <p class="muted" id="fastNote"></p></div>
+    <p class="muted" id="fastNote"></p>
+    <button type="button" class="secondary" data-screen="reminders">🔔 Remind me of the fasts</button></div>
   <div id="fastList"></div>
 </section>
 <section id="sermons" class="screen">
@@ -467,7 +515,7 @@ async function checkAdmin(){
   const {data,error}=await supabaseClient.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
   isAdmin=!!data&&!error; updateAdminUI(); return isAdmin;
 }
-function updateAdminUI(){if(isAdmin&&!window._setAdm){window._setAdm=1;setTimeout(()=>{loadSettings();loadSermons()},0)}if(!isAdmin)window._setAdm=0;const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=false;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
+function updateAdminUI(){if(isAdmin&&!window._setAdm){window._setAdm=1;setTimeout(()=>{loadSettings();loadSermons();loadNews()},0)}if(!isAdmin)window._setAdm=0;const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=false;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
 async function adminLogin(){
  if(!supabaseClient){toast("Supabase is not configured yet");return;}
  const email=$("adminEmail").value.trim(),password=$("adminPassword").value;
@@ -567,7 +615,7 @@ function exportLessons(){
 function $(id){return document.getElementById(id)}
 function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.style.display="none",1800)}
 function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id===id));document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id));window.scrollTo({top:0,behavior:"smooth"})}
-function renderDevotional(){const d=allDevotionals[devIndex%allDevotionals.length];$("devTitle").textContent=d.title;$("devText").textContent=d.text;$("devRef").textContent=d.ref;$("homeDevTitle").textContent=d.title;$("homeDevText").textContent=d.text}
+function renderDevotional(){setTimeout(devDoneBtn,0);const d=allDevotionals[devIndex%allDevotionals.length];$("devTitle").textContent=d.title;$("devText").textContent=d.text;$("devRef").textContent=d.ref;$("homeDevTitle").textContent=d.title;$("homeDevText").textContent=d.text}
 function renderDevotionals(){const box=$("devotionalGrid");if(!box)return;const custom=importedDevotionals;if(!custom.length){box.innerHTML='<p class="muted">No custom devotionals yet.</p>';return;}box.innerHTML=custom.map((d,i)=>'<div class="tile"><b>'+escapeHtml(d.title)+'</b><p class="muted">'+escapeHtml(d.series||d.ref)+'</p><p>'+escapeHtml(d.text)+'</p><button type="button" class="secondary" data-devotional="'+i+'">Open devotional</button></div>').join("");}
 function openVerse(ref){
   const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref); if(!v)return;
@@ -597,7 +645,7 @@ function openLesson(i){
   card.hidden=false;
   card.innerHTML='<span class="pill">'+escapeHtml(l.ref)+'</span><h2>'+escapeHtml(l.title)+'</h2><p>'+escapeHtml(l.text)+'</p>'+
     l.qs.map((q,n)=>'<div class="result"><b>'+String(n+1).padStart(2,"0")+' · '+escapeHtml(q)+'</b></div>').join("")+
-    (l.__first?'<br><button type="button" class="secondary" data-readref="'+escapeAttr(l.__first.book+"|"+l.__first.chapter)+'">📖 Read in Bible</button> ':'')+'<br><button type="button" class="primary" data-action="openJournal">Write reflection</button>';
+    (l.__first?'<br><button type="button" class="secondary" data-readref="'+escapeAttr(l.__first.book+"|"+l.__first.chapter)+'">📖 Read in Bible</button> ':'')+(i<365?'<br><button type="button" class="secondary" data-done="s|'+(i+1)+'">'+doneLabel("s",i+1)+'</button>':'')+'<br><button type="button" class="primary" data-action="openJournal">Write reflection</button>';
   showScreen("studies");card.scrollIntoView({behavior:"smooth",block:"center"});
 }
 function nextDev(){devIndex=(devIndex+1)%allDevotionals.length;renderDevotional();showScreen("devotional")}
@@ -661,6 +709,12 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const dn=e.target.closest("[data-done]");if(dn){const [k,n]=dn.dataset.done.split("|");doneToggle(k,+n);return}
+ const po=e.target.closest("[data-pgopen]");if(po){const [k,n]=po.dataset.pgopen.split("|");if(k==="s")openLesson(+n-1);else{devIndex=+n-1;renderDevotional();showScreen("devotional")}return}
+ const pj=e.target.closest("[data-pj]");if(pj){const [a,id]=pj.dataset.pj.split("|");pjAct(a,+id);return}
+ const pjf=e.target.closest("[data-pjf]");if(pjf){pjFilter=pjf.dataset.pjf;pjRender();return}
+ const nics=e.target.closest("[data-news-ics]");if(nics){newsIcs(+nics.dataset.newsIcs);return}
+ const ndel=e.target.closest("[data-news-del]");if(ndel){newsDelete(+ndel.dataset.newsDel);return}
  const hcd=e.target.closest("[data-hcday]");if(hcd){hcPick(hcd.dataset.hcday);return}
  const ff=e.target.closest("[data-fastf]");if(ff){FS.f=ff.dataset.fastf;fastRender();return}
  const pts=e.target.closest("[data-ptspeak]");if(pts){ptSpeak(pts.dataset.ptspeak);return}
@@ -680,7 +734,7 @@ function handleTap(e){
   case"openBible":showScreen("bible");break;
   case"openStudies":showScreen("studies");break;
   case"openJournal":showScreen("journal");break;
-  case"savePrayer":save("prayer","prayer","prayerStatus");break;
+  case"savePrayer":pjAdd();break;
   case"saveNotes":save("notes","notes","notesStatus");break;
   case"clearData":clearData();break;
   case"notifyTest":notifyTest();break;
@@ -706,6 +760,12 @@ function handleTap(e){
   case"hcPrev":HC.ref=addD(HC.days[0],-1);hcRender();break;
   case"hcNext":HC.ref=addD(HC.days[HC.days.length-1],1);hcRender();break;
   case"hcToday":{const n=new Date();HC.ref=new Date(n.getFullYear(),n.getMonth(),n.getDate(),12);hcRender();hcPick(fkey(HC.ref));break}
+  case"remMake":remMake();break;
+  case"votdShare":votdShare();break;
+  case"newsPublish":newsPublish();break;
+  case"openLive":{const u=safeUrl(SETTINGS.liveUrl);if(u)window.open(u,"_blank","noopener");break}
+  case"strSearch":strSearch();break;
+  case"prayerExport":pjExport();break;
   case"fastPrev":FS.y--;fastRender();break;
   case"fastNext":FS.y++;fastRender();break;
   case"fastToday":FS.y=new Date().getFullYear();fastRender();break;
@@ -825,7 +885,7 @@ function feastRender(){
 $("feastDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
 $("feastLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("");
 feastRender();feastDetailShow();
-const SET_DEF={prayerEmail:"brandonpartinministries@gmail.com",youtubeChannel:"",donateUrl:"",donateLabel:"Give now",giveNotes:"",admin_processor:"",admin_bankName:"",admin_payoutUrl:""};
+const SET_DEF={prayerEmail:"brandonpartinministries@gmail.com",youtubeChannel:"",liveUrl:"",donateUrl:"",donateLabel:"Give now",giveNotes:"",admin_processor:"",admin_bankName:"",admin_payoutUrl:""};
 let SETTINGS=Object.assign({},SET_DEF),SERMONS=[];
 const safeUrl=u=>{u=String(u||"").trim();return /^https?:\/\//i.test(u)?u:""};
 const ytId=u=>{const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/);return m?m[1]:null};
@@ -834,8 +894,8 @@ function applySettings(){
   $("giveBtn").textContent="💝 "+(S.donateLabel||"Give now");
   $("giveNotes").textContent=S.giveNotes||"";$("giveNotes").hidden=!S.giveNotes;
   $("giveSetup").hidden=!(isAdmin&&!safeUrl(S.donateUrl));
-  $("srmChannel").hidden=!safeUrl(S.youtubeChannel);
-  [["setEmail","prayerEmail"],["setChannel","youtubeChannel"],["setDonateUrl","donateUrl"],["setDonateLabel","donateLabel"],["setGiveNotes","giveNotes"],["setProcessor","admin_processor"],["setBank","admin_bankName"],["setPayoutUrl","admin_payoutUrl"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=S[k]||""});
+  $("srmChannel").hidden=!safeUrl(S.youtubeChannel);const nl=$("newsLive");if(nl)nl.hidden=!safeUrl(S.liveUrl);
+  [["setEmail","prayerEmail"],["setChannel","youtubeChannel"],["setLive","liveUrl"],["setDonateUrl","donateUrl"],["setDonateLabel","donateLabel"],["setGiveNotes","giveNotes"],["setProcessor","admin_processor"],["setBank","admin_bankName"],["setPayoutUrl","admin_payoutUrl"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=S[k]||""});
 }
 async function loadSettings(){
   try{Object.assign(SETTINGS,JSON.parse(localStorage.getItem("bpm_settings")||"{}"))}catch(_){}
@@ -849,11 +909,12 @@ async function saveSettings(obj){
   applySettings();toast(ok?"Saved for everyone":"Saved on this device only. Run bpm-setup.sql in Supabase to save for everyone.");
 }
 function adminSaveSite(){
-  const email=$("setEmail").value.trim(),ch=$("setChannel").value.trim(),du=$("setDonateUrl").value.trim();
+  const email=$("setEmail").value.trim(),ch=$("setChannel").value.trim(),du=$("setDonateUrl").value.trim(),lv=$("setLive").value.trim();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){toast("Enter a valid prayer email");return}
   if(ch&&!safeUrl(ch)){toast("The YouTube link must start with https://");return}
   if(du&&!safeUrl(du)){toast("The donation link must start with https://");return}
-  saveSettings({prayerEmail:email,youtubeChannel:ch,donateUrl:du,donateLabel:$("setDonateLabel").value.trim()||"Give now",giveNotes:$("setGiveNotes").value.trim()});
+  if(lv&&!safeUrl(lv)){toast("The live stream link must start with https://");return}
+  saveSettings({prayerEmail:email,youtubeChannel:ch,liveUrl:lv,donateUrl:du,donateLabel:$("setDonateLabel").value.trim()||"Give now",giveNotes:$("setGiveNotes").value.trim()});
 }
 function adminSavePayout(){
   const u=$("setPayoutUrl").value.trim();if(u&&!safeUrl(u)){toast("The dashboard link must start with https://");return}
@@ -1210,6 +1271,136 @@ function hcPick(k){const d=HC.days.find(x=>fkey(x)===k);if(!d)return;HC.sel=k;hc
 $("hcLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("")+[["Jewish fast",FASTC],["Hanukkah and Purim",HOLC]].map(([n,c])=>'<span class="pill" style="margin:3px;background:'+c+';color:#fff">'+n+'</span>').join("");
 $("hcDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
 hcRender();hcPick(fkey(HC.ref));homeDates();setInterval(homeDates,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)homeDates()});
+
+const REM_ALM={both:{ad:["-PT6H","PT8H"],tm:["-PT1H","PT0M"]},day:{ad:["PT8H"],tm:["PT0M"]},eve:{ad:["-PT6H"],tm:["-PT1H"]}};
+const remIds=["remFeasts","remShabbat","remC","remJ","remI","remWeekly"];
+function remOpts(){return{feasts:$("remFeasts").checked,shabbat:$("remShabbat").checked,c:$("remC").checked,j:$("remJ").checked,i:$("remI").checked,weekly:$("remWeekly").checked,mode:$("remMode").value}}
+function remEvents(o){
+  const td=new Date();td.setHours(12,0,0,0);const lim=addD(td,365),yr=td.getFullYear(),ev=[],skipped=new Set(),has=PT.lat!=null&&PT.lng!=null;
+  const keep=(a,b)=>b>=td&&a<=lim,atH=(base,h)=>new Date(base.getFullYear(),base.getMonth(),base.getDate(),0,Math.round(_fh(h)*60)),first=t=>t.split(". ")[0].replace(/\.$/,"")+".";
+  if(o.feasts)[yr,yr+1].forEach(y=>FEASTS.forEach(F=>{const r=feastYear(y).ranges[F.id]||[];if(!r.length)return;const a=r[0],b=r[r.length-1];if(keep(a,b))ev.push({ad:1,a,b,name:F.name,desc:"Begins at sunset the evening before. "+first(F.desc),key:"feast-"+F.id+fkey(a)})}));
+  FASTS.forEach(f=>{if(f.noFast||!o[f.tr])return;[yr,yr+1].forEach(y=>{let rr=[];try{rr=f.get(y)}catch(_){}rr.forEach(([a,b])=>{if(!keep(a,b))return;
+    ev.push({ad:1,a,b,name:"Fast: "+f.name,desc:first(f.desc),key:"fast-"+f.name+fkey(a)});
+    if(f.tm){if(!has){skipped.add("fast start and end times");return}
+      if(Math.round((b-a)/864e5)<=2||f.name==="Ramadan")for(let d=a;d<=b;d=addD(d,1)){const t=ptCompute(d);let st,en,sn="Fast begins: ",en2="Fast ends: ";
+        if(f.tm==="i"){st=atH(d,t.fajr);en=atH(d,t.maghrib);if(f.name==="Ramadan"){sn="Suhoor ends, fast begins: ";en2="Iftar, break the fast: "}}
+        else if(f.tm==="m"){st=atH(d,t.alot);en=atH(d,t.tzeit)}
+        else{const p=addD(d,-1),tp=ptCompute(p);st=atH(p,tp.sunset);en=atH(d,t.tzeit)}
+        ev.push({t:st,name:sn+f.name,desc:"Fast start. "+first(f.desc),key:"fb-"+f.name+fkey(d)},{t:en,name:en2+f.name,desc:"Fast end.",key:"fe-"+f.name+fkey(d)})}}})})});
+  if(o.weekly)FWEEK.forEach(w=>{if(!o[w.tr])return;let d=td;for(let i=0;i<7&&!w.days.includes(d.getDay());i++)d=addD(d,1);
+    ev.push({ad:1,a:d,b:d,name:"Weekly fast: "+w.name,desc:first(w.desc),rrule:"FREQ=WEEKLY;BYDAY="+w.days.map(x=>["SU","MO","TU","WE","TH","FR","SA"][x]).join(",")+";COUNT="+w.days.length*52,key:"weekly-"+w.tr})});
+  if(o.shabbat){if(!has)skipped.add("Shabbat times");else{let d=td;while(d.getDay()!==5)d=addD(d,1);for(let i=0;i<52;i++,d=addD(d,7)){const t=ptCompute(d),sat=addD(d,1),ts=ptCompute(sat);
+    ev.push({t:atH(d,t.sunset-18/60),name:"Shabbat candle lighting",desc:"Light the Shabbat candles about 18 minutes before sunset. Customs vary.",key:"candles"+fkey(d)},{t:atH(sat,ts.tzeit),name:"Shabbat ends (Havdalah)",desc:"Shabbat ends at nightfall. Customs vary.",key:"havdalah"+fkey(sat)})}}}
+  return{ev,skipped:[...skipped]};
+}
+function remPreview(){
+  try{localStorage.setItem("bpm_rem",JSON.stringify(Object.assign({},...remIds.map(i=>({[i]:$(i).checked})),{mode:$("remMode").value})))}catch(_){}
+  const r=remEvents(remOpts());$("remCount").textContent=r.ev.length?r.ev.length+" calendar items will be added."+(r.skipped.length?" Skipped, because your location is not set: "+r.skipped.join(" and ")+".":""):"Nothing selected yet."+(r.skipped.length?" Set your location in Prayer Times for "+r.skipped.join(" and ")+".":"");
+}
+function remMake(){
+  const o=remOpts(),r=remEvents(o);if(!r.ev.length){toast("Choose something to be reminded about first");return}
+  const two=n=>String(n).padStart(2,"0"),ds=d=>d.getFullYear()+two(d.getMonth()+1)+two(d.getDate()),tsf=d=>ds(d)+"T"+two(d.getHours())+two(d.getMinutes())+"00",esc=t=>String(t).replace(/([,;\\])/g,"\\$1");
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z",L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Brandon Partin Ministries//Reminders//EN","CALSCALE:GREGORIAN"];
+  r.ev.forEach(e=>{L.push("BEGIN:VEVENT","UID:bpm-"+e.key.replace(/[^A-Za-z0-9]/g,"")+"@bpm","DTSTAMP:"+stamp);
+    if(e.ad)L.push("DTSTART;VALUE=DATE:"+ds(e.a),"DTEND;VALUE=DATE:"+ds(addD(e.b,1)));else L.push("DTSTART:"+tsf(e.t),"DTEND:"+tsf(new Date(e.t.getTime()+15*60000)));
+    if(e.rrule)L.push("RRULE:"+e.rrule);
+    L.push("SUMMARY:"+esc(e.name),"DESCRIPTION:"+esc(e.desc));
+    REM_ALM[o.mode][e.ad?"ad":"tm"].forEach(tr=>L.push("BEGIN:VALARM","TRIGGER:"+tr,"ACTION:DISPLAY","DESCRIPTION:"+esc(e.name),"END:VALARM"));
+    L.push("END:VEVENT")});
+  L.push("END:VCALENDAR");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar"}));a.download="bpm-reminders.ics";document.body.appendChild(a);a.click();a.remove();toast("Calendar file ready. Open it to add the reminders.");
+}
+try{const sv=JSON.parse(localStorage.getItem("bpm_rem")||"{}");remIds.forEach(i=>{if(i in sv)$(i).checked=!!sv[i]});if(sv.mode)$("remMode").value=sv.mode}catch(_){}
+remIds.concat(["remMode"]).forEach(i=>$(i).addEventListener("change",remPreview));
+document.querySelectorAll("[data-screen=reminders]").forEach(b=>b.addEventListener("click",()=>setTimeout(remPreview,50)));
+remPreview();
+
+/* ===== Progress ===== */
+let DONE={s:{},d:{}};try{DONE=Object.assign({s:{},d:{}},JSON.parse(localStorage.getItem("bpm_done")||"{}"))}catch(_){}
+const doneLabel=(k,n)=>DONE[k][n]?"✔ Completed (tap to undo)":"☐ Mark complete";
+function devDoneBtn(){const b=$("devDone");if(!b)return;const n=devIndex%allDevotionals.length+1;b.hidden=n>365;b.dataset.done="d|"+n;b.textContent=doneLabel("d",n)}
+function doneToggle(k,n){const m=DONE[k];if(m[n])delete m[n];else m[n]=fkey(new Date());try{localStorage.setItem("bpm_done",JSON.stringify(DONE))}catch(_){}
+  document.querySelectorAll("[data-done]").forEach(b=>{const [kk,nn]=b.dataset.done.split("|");b.textContent=doneLabel(kk,+nn)});pgRender()}
+function pgRender(){
+  const T=Math.min(DOY,365),sc=Object.keys(DONE.s).length,dc=Object.keys(DONE.d).length,dates=new Set(Object.values(DONE.s).concat(Object.values(DONE.d)));
+  let d=new Date();d.setHours(12,0,0,0);if(!dates.has(fkey(d)))d=addD(d,-1);let st=0;while(dates.has(fkey(d))){st++;d=addD(d,-1)}
+  const bar=n=>'<div style="height:10px;background:rgba(128,128,128,.25);border-radius:6px;overflow:hidden;margin:6px 0"><div style="height:100%;width:'+Math.round(n/365*100)+'%;background:#3b82f6"></div></div>';
+  const title=(k,n)=>{const x=k==="s"?lessons[n-1]:allDevotionals[n-1];return x?x.title:"Day "+n};
+  const row=(k,n)=>'<div style="margin:8px 0;padding:8px;border:1px solid rgba(128,128,128,.25);border-radius:10px"><b>Day '+n+'</b> '+escapeHtml(title(k,n))+'<br><button type="button" class="secondary chipbtn" data-pgopen="'+k+'|'+n+'">Open</button><button type="button" class="secondary chipbtn" data-done="'+k+'|'+n+'">'+doneLabel(k,n)+'</button></div>';
+  const missed=k=>{const r=[];for(let n=T-1;n>=1&&r.length<7;n--)if(!DONE[k][n])r.push(n);return r};
+  let h='<p><b>🔥 '+st+'-day streak</b> <span class="muted">(days in a row with something completed)</span></p><p>Bible study plan: <b>'+sc+' of 365</b>'+bar(sc)+'</p><p>Daily devotionals: <b>'+dc+' of 365</b>'+bar(dc)+'</p><h2>Today (day '+T+')</h2>'+row("s",T)+row("d",T);
+  const ms=missed("s"),md=missed("d");
+  h+='<h2>Catch up</h2>'+((ms.length||md.length)?(ms.length?'<h3>Bible study</h3>'+ms.map(n=>row("s",n)).join(""):"")+(md.length?'<h3>Devotionals</h3>'+md.map(n=>row("d",n)).join(""):"")+'<p class="muted">Showing your 7 most recent missed days of each.</p>':'<p class="muted">You are all caught up. Well done!</p>');
+  $("pgBody").innerHTML=h;
+}
+/* ===== Verse of the day ===== */
+const VOTD=["Genesis 1:1","Genesis 28:15","Deuteronomy 31:6","Joshua 1:9","Ruth 1:16","1 Samuel 16:7","2 Chronicles 7:14","Job 19:25","Psalms 23:1","Psalms 27:1","Psalms 34:8","Psalms 37:4","Psalms 46:1","Psalms 46:10","Psalms 51:10","Psalms 56:3","Psalms 91:1","Psalms 100:4","Psalms 103:2","Psalms 118:24","Psalms 119:11","Psalms 119:105","Psalms 121:1","Psalms 139:14","Psalms 143:8","Psalms 145:18","Proverbs 3:5","Proverbs 3:6","Proverbs 16:3","Proverbs 18:10","Proverbs 22:6","Proverbs 31:25","Ecclesiastes 3:1","Isaiah 9:6","Isaiah 26:3","Isaiah 40:8","Isaiah 40:31","Isaiah 41:10","Isaiah 43:2","Isaiah 53:5","Isaiah 55:8","Jeremiah 17:7","Jeremiah 29:11","Jeremiah 33:3","Lamentations 3:22","Ezekiel 36:26","Micah 6:8","Nahum 1:7","Habakkuk 3:19","Zephaniah 3:17","Malachi 3:10","Matthew 5:16","Matthew 6:33","Matthew 7:7","Matthew 11:28","Matthew 19:26","Matthew 22:37","Matthew 28:19","Matthew 28:20","Mark 10:27","Mark 12:30","Luke 1:37","Luke 6:31","Luke 11:9","John 1:1","John 3:16","John 8:12","John 8:32","John 10:10","John 11:25","John 13:34","John 14:6","John 14:27","John 15:5","John 15:13","John 16:33","Acts 1:8","Acts 2:38","Acts 4:12","Romans 1:16","Romans 3:23","Romans 5:8","Romans 6:23","Romans 8:1","Romans 8:28","Romans 8:38","Romans 10:9","Romans 12:2","Romans 15:13","1 Corinthians 10:13","1 Corinthians 13:4","1 Corinthians 13:13","1 Corinthians 15:57","2 Corinthians 5:7","2 Corinthians 5:17","2 Corinthians 12:9","Galatians 2:20","Galatians 5:22","Galatians 6:9","Ephesians 2:8","Ephesians 4:32","Ephesians 6:10","Philippians 1:6","Philippians 4:6","Philippians 4:7","Philippians 4:8","Philippians 4:13","Philippians 4:19","Colossians 3:23","1 Thessalonians 5:16","1 Thessalonians 5:18","2 Timothy 1:7","2 Timothy 3:16","Hebrews 4:12","Hebrews 11:1","Hebrews 11:6","Hebrews 12:1","Hebrews 13:8","James 1:5","James 1:22","James 4:8","1 Peter 5:7","2 Peter 3:9","1 John 1:9","1 John 4:8","1 John 4:19","Jude 1:24","Revelation 3:20","Revelation 21:4"];
+let votdKey="";
+function votdRender(){const ref=VOTD[(DOY-1)%VOTD.length];if(votdKey==="ok:"+ref)return;const v=bibleVerses.length?bibleVerses.find(x=>x.ref===ref):null;
+  $("votdRef").textContent=ref;$("votdText").textContent=v?v.text:(bibleVerses.length?"Tap Open to read this verse.":"Loading the Bible…");$("votdOpen").dataset.ref=ref;if(v||bibleVerses.length)votdKey="ok:"+ref}
+function votdShare(){const t=$("votdRef").textContent+": "+$("votdText").textContent;if(navigator.share)navigator.share({title:"Verse of the day",text:t}).catch(()=>{});else if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>toast("Verse copied"),()=>toast("Could not copy"))}
+/* ===== News ===== */
+let NEWS=[];
+async function loadNews(){let rows=null;if(supabaseClient){try{const {data,error}=await supabaseClient.from("announcements").select("*").eq("published",true).order("created_at",{ascending:false});if(!error&&data)rows=data}catch(_){}}
+  if(!rows){try{rows=JSON.parse(localStorage.getItem("bpm_news")||"[]")}catch(_){rows=[]}}NEWS=rows;renderNews()}
+const newsWhen=x=>x.event_date?new Date(x.event_date+"T"+(x.event_time||"00:00")+":00"):null;
+function renderNews(){
+  const y=addD(new Date(),-1),rows=NEWS.map((x,i)=>({x,i,d:newsWhen(x)})).filter(r=>!r.d||r.d>=y);
+  rows.sort((a,b)=>(b.x.pinned?1:0)-(a.x.pinned?1:0)||(a.d&&b.d?a.d-b.d:a.d?-1:b.d?1:0)||String(b.x.created_at||"").localeCompare(String(a.x.created_at||"")));
+  $("newsList").innerHTML=rows.length?rows.map(({x,i,d})=>'<div class="card">'+(x.pinned?'<span class="pill">📌 Pinned</span> ':'')+'<h3 style="margin:8px 0 4px">'+escapeHtml(x.title)+'</h3>'+(d?'<div><b>📅 '+escapeHtml(d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+(x.event_time?" · "+d.toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}):""))+'</b>'+(x.location?'<br>📍 '+escapeHtml(x.location):'')+'</div>':'')+(x.body?'<p style="white-space:pre-wrap">'+escapeHtml(x.body)+'</p>':'')+(safeUrl(x.link_url)?'<a class="secondary chipbtn" style="display:inline-block;text-decoration:none" href="'+escapeHtml(x.link_url)+'" target="_blank" rel="noopener">🔗 Open link</a>':'')+(d?'<button type="button" class="secondary chipbtn" data-news-ics="'+i+'">📅 Add to calendar</button>':'')+(isAdmin?'<button type="button" class="secondary chipbtn" data-news-del="'+i+'">Delete</button>':'')+'</div>').join(""):'<div class="card"><p class="muted">No announcements yet. Please check back soon.</p></div>';
+}
+function newsIcs(i){const x=NEWS[i],d=x&&newsWhen(x);if(!d)return;const two=n=>String(n).padStart(2,"0"),ts=t=>t.getFullYear()+two(t.getMonth()+1)+two(t.getDate())+"T"+two(t.getHours())+two(t.getMinutes())+"00",esc=t=>String(t||"").replace(/([,;\\])/g,"\\$1").replace(/\n/g,"\\n");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Brandon Partin Ministries//News//EN","BEGIN:VEVENT","UID:bpm-news-"+(x.id||i)+"@bpm","DTSTAMP:"+new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z"];
+  if(x.event_time)L.push("DTSTART:"+ts(d),"DTEND:"+ts(new Date(d.getTime()+3600000)));else L.push("DTSTART;VALUE=DATE:"+ts(d).slice(0,8),"DTEND;VALUE=DATE:"+ts(addD(d,1)).slice(0,8));
+  L.push("SUMMARY:"+esc(x.title),"DESCRIPTION:"+esc(x.body),"LOCATION:"+esc(x.location),"BEGIN:VALARM","TRIGGER:-P1D","ACTION:DISPLAY","DESCRIPTION:"+esc(x.title),"END:VALARM","BEGIN:VALARM","TRIGGER:-PT1H","ACTION:DISPLAY","DESCRIPTION:"+esc(x.title),"END:VALARM","END:VEVENT","END:VCALENDAR");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([L.join("\r\n")],{type:"text/calendar"}));a.download="event.ics";document.body.appendChild(a);a.click();a.remove();toast("Open the file to add this event")}
+async function newsPublish(){
+  if(!isAdmin){toast("Sign in as an administrator first");return}
+  const title=$("newsTitle").value.trim();if(!title){toast("Add a title");return}const lk=$("newsLink").value.trim();if(lk&&!safeUrl(lk)){toast("The link must start with https://");return}
+  const row={title,body:$("newsBody").value.trim()||null,event_date:$("newsDate").value||null,event_time:$("newsTime").value||null,location:$("newsLoc").value.trim()||null,link_url:lk||null,pinned:$("newsPin").checked,published:true};
+  const {error}=await supabaseClient.from("announcements").insert(row);if(error){toast("Could not post: "+error.message+" (run bpm-setup.sql in Supabase)");return}
+  ["newsTitle","newsBody","newsDate","newsTime","newsLoc","newsLink"].forEach(id=>$(id).value="");$("newsPin").checked=false;toast("Posted");loadNews()}
+async function newsDelete(i){const x=NEWS[i];if(!x||!isAdmin||!confirm("Delete this post?"))return;if(x.id&&supabaseClient){const {error}=await supabaseClient.from("announcements").delete().eq("id",x.id);if(error){toast(error.message);return}}toast("Deleted");loadNews()}
+document.querySelector("[data-screen=news]")?.addEventListener("click",()=>loadNews());
+document.querySelector("[data-screen=progress]")?.addEventListener("click",()=>pgRender());
+/* ===== Prayer journal ===== */
+let PJ=[],pjFilter="all";
+function pjSave(){try{localStorage.setItem("bpm_prayers",JSON.stringify(PJ))}catch(_){}}
+function pjLoad(){try{PJ=JSON.parse(localStorage.getItem("bpm_prayers")||"null")}catch(_){PJ=null}
+  if(!Array.isArray(PJ)){PJ=[];const old=localStorage.getItem("bpm_prayer");if(old&&old.trim())PJ.push({id:Date.now(),t:new Date().toISOString(),text:old.trim(),answered:false});pjSave();try{localStorage.removeItem("bpm_prayer")}catch(_){}}
+  $("prayer").value=""}
+function pjAdd(){const text=$("prayer").value.trim();if(!text){toast("Write your prayer first");return}PJ.unshift({id:Date.now(),t:new Date().toISOString(),text,answered:false});pjSave();$("prayer").value="";$("prayerStatus").textContent="Saved";setTimeout(()=>$("prayerStatus").textContent="",2000);pjRender()}
+function pjAct(a,id){const p=PJ.find(x=>x.id===id);if(!p)return;
+  if(a==="ans"){const n=prompt("How was this prayer answered? (optional)");if(n===null)return;p.answered=true;p.aNote=n.trim();p.aT=new Date().toISOString()}
+  else if(a==="und"){p.answered=false;delete p.aNote;delete p.aT}
+  else if(a==="del"){if(!confirm("Delete this prayer?"))return;PJ=PJ.filter(x=>x.id!==id)}
+  pjSave();pjRender()}
+function pjRender(){
+  const w=PJ.filter(x=>!x.answered).length,a=PJ.length-w;
+  $("prayerFilter").innerHTML=[["all","All ("+PJ.length+")"],["wait","Waiting ("+w+")"],["ans","Answered ("+a+")"]].map(([k,l])=>'<button type="button" class="chipbtn '+(pjFilter===k?"primary":"secondary")+'" data-pjf="'+k+'">'+l+'</button>').join("");
+  const list=PJ.filter(x=>pjFilter==="all"||(pjFilter==="ans"?x.answered:!x.answered));
+  $("prayerList").innerHTML=list.length?list.map(x=>'<div class="result" style="margin:10px 0"><div class="muted">'+escapeHtml(new Date(x.t).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"}))+(x.answered?' · <b>✔ Answered</b>':'')+'</div><p style="white-space:pre-wrap;margin:6px 0">'+escapeHtml(x.text)+'</p>'+(x.answered&&x.aNote?'<p><b>Answer:</b> '+escapeHtml(x.aNote)+'</p>':'')+(x.answered?'<button type="button" class="secondary chipbtn" data-pj="und|'+x.id+'">Undo</button>':'<button type="button" class="secondary chipbtn" data-pj="ans|'+x.id+'">✔ Mark answered</button>')+'<button type="button" class="secondary chipbtn" data-pj="del|'+x.id+'">Delete</button></div>').join(""):'<p class="muted">Nothing here yet.</p>';
+}
+function pjExport(){if(!PJ.length){toast("No prayers to download yet");return}const t=PJ.slice().reverse().map(x=>new Date(x.t).toLocaleDateString()+(x.answered?" (answered"+(x.aNote?": "+x.aNote:"")+")":"")+"\n"+x.text).join("\n\n---\n\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="my-prayer-journal.txt";document.body.appendChild(a);a.click();a.remove()}
+/* ===== Strong's lookup ===== */
+let STR=null;
+function strUse(j,src){if(j&&(j.H||j.G)){STR=j;$("strStatus").textContent="Strong's data loaded from "+src+" ("+(Object.keys(j.H||{}).length+Object.keys(j.G||{}).length).toLocaleString()+" entries).";return true}$("strStatus").textContent="That file is not in the expected format: {\"H\":{\"430\":{\"t\":\"\",\"p\":\"\",\"d\":\"\"}},\"G\":{...}}";return false}
+async function strongsLoad(){try{const r=await fetch("strongs.json",{cache:"no-cache"});if(r.ok)strUse(await r.json(),"this site")}catch(_){}}
+$("strFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{strUse(JSON.parse(r.result),f.name)}catch(_){$("strStatus").textContent="Could not read that file."}};r.readAsText(f)});
+$("strQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();strSearch()}});
+function strSearch(){
+  if(!STR){toast("Load a Strong's file first");return}const q=$("strQ").value.trim().toLowerCase();if(!q)return;
+  const show=(pre,n,x)=>'<div class="verseRow"><b>'+pre+n+'</b> <i>'+escapeHtml(x.t||"")+'</i> <span class="muted">'+escapeHtml(x.p||"")+'</span><br>'+escapeHtml(x.d||"")+'</div>';
+  const m=q.match(/^([hg])?\s*0*(\d{1,4})$/);let out=[];
+  if(m){["H","G"].forEach(k=>{if(m[1]&&m[1].toUpperCase()!==k)return;const x=(STR[k]||{})[m[2]];if(x)out.push(show(k,m[2],x))})}
+  else{["H","G"].forEach(k=>{for(const n in (STR[k]||{})){const x=STR[k][n];if(out.length<25&&((x.t||"").toLowerCase().includes(q)||(x.d||"").toLowerCase().includes(q)))out.push(show(k,n,x))}})}
+  $("strOut").innerHTML=out.length?out.join(""):'<p class="muted">Nothing found.</p>';
+}
+/* ===== Offline ===== */
+function offBar(){$("offlineBar").hidden=navigator.onLine}
+window.addEventListener("online",offBar);window.addEventListener("offline",offBar);offBar();
+pjLoad();pjRender();pgRender();devDoneBtn();votdRender();setInterval(votdRender,3000);loadNews();strongsLoad();
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

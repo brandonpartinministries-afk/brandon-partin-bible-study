@@ -43,6 +43,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .fday{width:auto;min-height:44px;padding:2px;border-radius:8px;font-size:.95rem;border:1px solid rgba(128,128,128,.25);background:transparent;color:inherit}
 .fday.today{outline:2px solid #3b82f6}.fday.empty{border:0;visibility:hidden}
 .fday.shab{background:rgba(59,130,246,.12)}
+main{zoom:var(--ts,1)}
+html.hc body{background:#000!important;color:#fff!important}html.hc .card,html.hc .tile,html.hc .result,html.hc .top{background:#000!important;border:2px solid #fff!important;color:#fff!important}
+html.hc .muted{color:#e6e6e6!important;opacity:1!important}html.hc button,html.hc input,html.hc select,html.hc textarea{border:2px solid #fff!important}html.hc .primary{background:#ffd400!important;color:#000!important}html.hc a{color:#7fd4ff!important}
+html.bigbtn button,html.bigbtn select,html.bigbtn input:not([type=checkbox]):not([type=range]){min-height:56px!important;font-size:1.1rem!important}
 .navlinks .tabHidden{display:none!important}
 .fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
 .srmPlayer iframe,.srmPlayer video{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}.srmPlayer audio{width:100%}
@@ -90,6 +94,8 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="reminders">Reminders</button>
     <button type="button" data-screen="news">News</button>
     <button type="button" data-screen="progress">Progress</button>
+    <button type="button" data-screen="omer">Omer</button>
+    <button type="button" data-screen="wall">Prayer Wall</button>
     <button type="button" data-screen="hebcal">Hebrew Calendar</button>
     <button type="button" data-screen="fasts">Fasts</button>
     <button type="button" data-screen="sermons">Sermons</button>
@@ -128,9 +134,10 @@ body.light .toast{background:#172033;color:#fff}
       <div class="tile"><small class="muted">Julian</small><h3 id="hdJul" style="margin:6px 0 0"></h3></div>
     </div>
     <p id="hdNote" class="muted" style="margin-bottom:0;font-size:.85rem"></p>
+    <p id="hdOmer" style="margin:8px 0 0" hidden></p><p id="hdParsha" style="margin:8px 0 0" hidden></p>
     <button type="button" class="secondary" data-screen="hebcal" style="margin-top:10px">✡️ Open the Hebrew calendar</button></div>
   <div class="card" id="votdCard"><span class="pill">📜 Verse of the day</span><h3 id="votdRef" style="margin:10px 0 4px"></h3><p id="votdText" class="quote"></p>
-    <button type="button" class="secondary chipbtn" id="votdOpen" data-ref="">📖 Open</button><button type="button" class="secondary chipbtn" data-action="votdShare">📤 Share</button></div>
+    <button type="button" class="secondary chipbtn" id="votdOpen" data-ref="">📖 Open</button><button type="button" class="secondary chipbtn" data-action="votdShare">📤 Share</button><button type="button" class="secondary chipbtn" data-action="votdPic">🖼 Picture</button></div>
   <div class="grid">
     <div class="tile"><b>📖 Bible</b><p>Read and search the full KJV Bible with Apocrypha.</p><button type="button" class="secondary" data-action="openBible">Open</button></div>
     <div class="tile"><b>📚 Studies</b><p>Work through guided Bible study lessons.</p><button type="button" class="secondary" data-action="openStudies">Study</button></div>
@@ -202,6 +209,7 @@ body.light .toast{background:#172033;color:#fff}
         <input id="srmTitle" placeholder="Sermon title"><input id="srmSpeaker" placeholder="Speaker (optional)"><input id="srmDate" type="date"><textarea id="srmDesc" rows="3" placeholder="Short description (optional)"></textarea>
         <input id="srmLink" placeholder="YouTube link"><label class="muted">Or upload a file</label><input id="srmFile" type="file" accept="audio/*,video/*">
         <button type="button" class="primary" data-action="sermonPublish">Publish sermon</button></div></div>
+      <div class="card"><h2>🙏 Prayer Wall review</h2><p class="muted">New requests wait here until you approve them.</p><div id="wallPending"></div></div>
       <div class="card"><h2>🧭 Arrange tabs</h2><p class="muted">Move tabs up or down and choose which ones show. After you save, the new order applies for everyone, once the setup file has been run in Supabase. Home and Admin always stay visible.</p>
         <div id="tabEditor"></div><button type="button" class="primary" data-action="tabSave">Save arrangement</button> <button type="button" class="secondary" data-action="tabReset">Reset to default</button></div>
       <div class="card"><h2>📣 Post an announcement or event</h2><div class="stack">
@@ -228,6 +236,15 @@ body.light .toast{background:#172033;color:#fff}
 </section>
 
 <section id="settings" class="screen">
+  <div class="card"><span class="pill">♿ Accessibility</span><h2>Display</h2>
+    <label>Text size: <b id="a11yTsLbl">100%</b></label><input id="a11yTs" type="range" min="0.85" max="1.6" step="0.05" value="1" style="width:100%">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px"><input id="a11yHc" type="checkbox" style="width:auto">High contrast</label>
+    <label style="display:flex;align-items:center;gap:8px"><input id="a11yBig" type="checkbox" style="width:auto">Larger buttons</label></div>
+  <div class="card"><span class="pill">💾 Backup</span><h2>Back up my data</h2>
+    <p class="muted">Your prayers, progress, favorites, and notes are saved only on this device. Download a backup file to keep them safe or move them to a new phone.</p>
+    <button type="button" class="primary" data-action="backupMake">⬇ Download my data</button>
+    <label class="muted" style="display:block;margin-top:10px">Restore from a backup file</label><input id="bkFile" type="file" accept=".json,application/json">
+    <p class="muted"><button type="button" class="secondary chipbtn" data-screen="privacy">🔒 Privacy policy</button></p></div>
   <div class="card"><span class="pill">⚙️ Settings</span><h1>Settings</h1>
     <label><input id="reminders" type="checkbox" style="width:auto;margin-right:8px"> 🔔 Enable daily reminder</label>
     <p class="muted">This saves your preference on this device. Browser notification support depends on where the app is hosted.</p>
@@ -302,6 +319,8 @@ body.light .toast{background:#172033;color:#fff}
     <div id="hcDow" class="fgrid"></div><div id="hcGrid" class="fgrid"></div><div id="hcLegend" style="margin-top:10px"></div>
     <p class="muted">Each box shows the Hebrew day in large type with the matching civil date beneath it. Colored days are the feasts, fasts, Hanukkah and Purim. Tap a day for details. Each Hebrew day begins at sunset the evening before.</p></div>
   <div id="hcDetail" class="card"></div>
+  <div class="card" id="parshaCard"><span class="pill">📜 Torah portion</span><div id="parshaBody"><p class="muted">Loading…</p></div>
+    <label style="display:flex;align-items:center;gap:8px"><input id="parshaIsr" type="checkbox" style="width:auto">Use the Israel reading schedule</label><p class="muted">Torah portion dates from Hebcal.com. They need an internet connection the first time, then they are saved on your device.</p></div>
   <div class="card"><h2>This month</h2><div id="hcList"></div></div>
 </section>
 <section id="reminders" class="screen">
@@ -310,6 +329,7 @@ body.light .toast{background:#172033;color:#fff}
     <div class="stack">
       <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remFeasts" style="width:auto" checked>Feasts of the Lord (with a reminder that each feast begins at sunset)</label>
       <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remShabbat" style="width:auto">Shabbat candle lighting and Shabbat ending (needs your location)</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remOmer" style="width:auto">Counting the Omer, a nightly reminder for 49 nights (needs your location)</label>
       <b>Fasts</b>
       <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remC" style="width:auto">Christian fasts</label>
       <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="remJ" style="width:auto">Jewish fasts (with start and end times if your location is set)</label>
@@ -328,6 +348,30 @@ body.light .toast{background:#172033;color:#fff}
 </section>
 <section id="progress" class="screen">
   <div class="card"><span class="pill">✅ Progress</span><h1>My Progress</h1><p class="muted">Mark each day's study and devotional complete. Your progress is saved only on this device.</p><div id="pgBody"></div></div>
+</section>
+<section id="omer" class="screen">
+  <div class="card"><span class="pill">🌾 Omer</span><h1>Counting the Omer</h1><div id="omerBody"></div></div>
+</section>
+<section id="wall" class="screen">
+  <div class="card"><span class="pill">🙏 Prayer Wall</span><h1>Prayer Wall</h1>
+    <p class="muted">Share a request so others can pray. Every request is reviewed before it appears. Please do not include phone numbers, addresses, or private details about other people.</p>
+    <div class="stack"><input id="wallName" maxlength="40" placeholder="First name or initials (optional)"><textarea id="wallText" rows="4" maxlength="600" placeholder="How can we pray?"></textarea>
+    <label style="display:flex;align-items:center;gap:8px"><input id="wallOk" type="checkbox" style="width:auto">I understand this may be shown publicly after it is approved</label>
+    <button type="button" class="primary" data-action="wallSend">Send for review</button></div></div>
+  <div id="wallList"></div>
+</section>
+<section id="privacy" class="screen">
+  <div class="card"><span class="pill">🔒 Privacy</span><h1>Privacy Policy</h1>
+    <p class="muted">This is a general description of how this app handles information. It is not legal advice, and the ministry should have it reviewed before relying on it.</p>
+    <h3>Stored only on your device</h3><p>Your prayer journal, notes, favorites, reading progress, settings, saved location, and backups stay in your browser on your own device. They are not sent to us. If you clear your browser data they are lost unless you made a backup.</p>
+    <h3>Your location</h3><p>If you allow location, it is used only on your device to work out prayer times, Shabbat times, and fast times. It is not sent to our servers. The Torah portion feature asks Hebcal.com for the schedule for a year only. It does not send your location.</p>
+    <h3>Prayer requests by email</h3><p>The Prayer tab opens your own email app with the request filled in. We receive it only if you press Send. Requests are received at <b id="privEmail"></b>.</p>
+    <h3>Prayer Wall</h3><p>If you post to the Prayer Wall, the name and request you type are saved on our service (Supabase) and reviewed by an administrator. Approved requests are visible to everyone who opens the app. Tell us if you would like a request removed.</p>
+    <h3>Administrators</h3><p>Administrators sign in with an email and password through Supabase. Sermons, announcements, and settings that administrators post are stored there.</p>
+    <h3>Giving</h3><p>The Give button takes you to a payment provider chosen by the ministry. That provider handles your payment details under its own privacy policy. This app never sees or stores your card or bank details.</p>
+    <h3>Other services</h3><p>Bible text is loaded from getbible.net. Videos on the Sermons tab are played by YouTube, which may set its own cookies. Torah portion dates come from Hebcal.com. These services see your device's internet address when your device contacts them.</p>
+    <h3>Children</h3><p>This app is not directed to children under 13, and we do not knowingly collect information from them.</p>
+    <h3>Questions</h3><p>To ask about your information or to have something removed, write to <b class="privE"></b>.</p></div>
 </section>
 <section id="fasts" class="screen">
   <div class="card"><span class="pill">🍞 Fasting</span><h1>Fasts</h1>
@@ -518,7 +562,7 @@ async function checkAdmin(){
   const {data,error}=await supabaseClient.from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
   isAdmin=!!data&&!error; updateAdminUI(); return isAdmin;
 }
-function updateAdminUI(){if(isAdmin&&!window._setAdm){window._setAdm=1;setTimeout(()=>{loadSettings();loadSermons();loadNews()},0)}if(!isAdmin)window._setAdm=0;const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=false;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
+function updateAdminUI(){if(isAdmin&&!window._setAdm){window._setAdm=1;setTimeout(()=>{loadSettings();loadSermons();loadNews();wallLoad()},0)}if(!isAdmin)window._setAdm=0;const n=$("adminNav"),login=$("adminLogin"),panel=$("adminPanel");if(n)n.hidden=false;if(login)login.hidden=isAdmin;if(panel)panel.hidden=!isAdmin; if($("adminStatus"))$("adminStatus").textContent=isAdmin?"Administrator access enabled.":(cloudReady()?"Sign in with an administrator account to manage published content.":"Cloud administration is not configured yet. Add your Supabase settings from the setup file.");}
 async function adminLogin(){
  if(!supabaseClient){toast("Supabase is not configured yet");return;}
  const email=$("adminEmail").value.trim(),password=$("adminPassword").value;
@@ -623,7 +667,7 @@ function renderDevotionals(){const box=$("devotionalGrid");if(!box)return;const 
 function openVerse(ref){
   const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref); if(!v)return;
   const card=$("verseCard"); card.hidden=false;
-  card.innerHTML='<span class="pill">📖 '+escapeHtml(v.ref)+'</span><div class="verse" style="margin-top:14px">'+escapeHtml(v.text)+'</div><br><button type="button" class="primary" data-bookmark="'+encodeURIComponent(v.ref)+'">❤️ Bookmark</button>';
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(v.ref)+'</span><div class="verse" style="margin-top:14px">'+escapeHtml(v.text)+'</div><br><button type="button" class="primary" data-bookmark="'+encodeURIComponent(v.ref)+'">❤️ Bookmark</button> <button type="button" class="secondary" data-vpic="'+encodeURIComponent(v.ref)+'">🖼 Share as picture</button>';
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"center"});
 }
 function search(){
@@ -712,6 +756,9 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const vp=e.target.closest("[data-vpic]");if(vp){const r=decodeURIComponent(vp.dataset.vpic),v=bibleVerses.find(x=>x.ref===r)||verses.find(x=>x.ref===r);if(v)verseImage(v.ref,v.text);return}
+ const wp=e.target.closest("[data-wallpray]");if(wp){wallPray(+wp.dataset.wallpray);return}
+ const wm=e.target.closest("[data-wallmod]");if(wm){const [a,i]=wm.dataset.wallmod.split("|");wallMod(a,+i);return}
  const tmv=e.target.closest("[data-tabmv]");if(tmv){if(!tmv.disabled){const [k,d]=tmv.dataset.tabmv.split("|");tabMove(k,+d)}return}
  const dn=e.target.closest("[data-done]");if(dn){const [k,n]=dn.dataset.done.split("|");doneToggle(k,+n);return}
  const po=e.target.closest("[data-pgopen]");if(po){const [k,n]=po.dataset.pgopen.split("|");if(k==="s")openLesson(+n-1);else{devIndex=+n-1;renderDevotional();showScreen("devotional")}return}
@@ -765,6 +812,9 @@ function handleTap(e){
   case"hcNext":HC.ref=addD(HC.days[HC.days.length-1],1);hcRender();break;
   case"hcToday":{const n=new Date();HC.ref=new Date(n.getFullYear(),n.getMonth(),n.getDate(),12);hcRender();hcPick(fkey(HC.ref));break}
   case"remMake":remMake();break;
+  case"votdPic":{const t=$("votdText").textContent;if(/^(Loading|Tap Open)/.test(t)){toast("Open the verse first so its text is loaded");break}verseImage($("votdRef").textContent,t);break}
+  case"wallSend":wallSend();break;
+  case"backupMake":backupMake();break;
   case"tabSave":tabSave();break;
   case"tabReset":tabReset();break;
   case"votdShare":votdShare();break;
@@ -900,7 +950,7 @@ function applySettings(){
   $("giveBtn").textContent="💝 "+(S.donateLabel||"Give now");
   $("giveNotes").textContent=S.giveNotes||"";$("giveNotes").hidden=!S.giveNotes;
   $("giveSetup").hidden=!(isAdmin&&!safeUrl(S.donateUrl));
-  $("srmChannel").hidden=!safeUrl(S.youtubeChannel);const nl=$("newsLive");if(nl)nl.hidden=!safeUrl(S.liveUrl);try{applyTabs()}catch(_){}
+  $("srmChannel").hidden=!safeUrl(S.youtubeChannel);const nl=$("newsLive");if(nl)nl.hidden=!safeUrl(S.liveUrl);try{applyTabs()}catch(_){}const pe=$("privEmail");if(pe)pe.textContent=S.prayerEmail;document.querySelectorAll(".privE").forEach(x=>x.textContent=S.prayerEmail);
   [["setEmail","prayerEmail"],["setChannel","youtubeChannel"],["setLive","liveUrl"],["setDonateUrl","donateUrl"],["setDonateLabel","donateLabel"],["setGiveNotes","giveNotes"],["setProcessor","admin_processor"],["setBank","admin_bankName"],["setPayoutUrl","admin_payoutUrl"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=S[k]||""});
 }
 async function loadSettings(){
@@ -1279,8 +1329,8 @@ $("hcDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x
 hcRender();hcPick(fkey(HC.ref));homeDates();setInterval(homeDates,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)homeDates()});
 
 const REM_ALM={both:{ad:["-PT6H","PT8H"],tm:["-PT1H","PT0M"]},day:{ad:["PT8H"],tm:["PT0M"]},eve:{ad:["-PT6H"],tm:["-PT1H"]}};
-const remIds=["remFeasts","remShabbat","remC","remJ","remI","remWeekly"];
-function remOpts(){return{feasts:$("remFeasts").checked,shabbat:$("remShabbat").checked,c:$("remC").checked,j:$("remJ").checked,i:$("remI").checked,weekly:$("remWeekly").checked,mode:$("remMode").value}}
+const remIds=["remFeasts","remShabbat","remOmer","remC","remJ","remI","remWeekly"];
+function remOpts(){return{feasts:$("remFeasts").checked,shabbat:$("remShabbat").checked,omer:$("remOmer").checked,c:$("remC").checked,j:$("remJ").checked,i:$("remI").checked,weekly:$("remWeekly").checked,mode:$("remMode").value}}
 function remEvents(o){
   const td=new Date();td.setHours(12,0,0,0);const lim=addD(td,365),yr=td.getFullYear(),ev=[],skipped=new Set(),has=PT.lat!=null&&PT.lng!=null;
   const keep=(a,b)=>b>=td&&a<=lim,atH=(base,h)=>new Date(base.getFullYear(),base.getMonth(),base.getDate(),0,Math.round(_fh(h)*60)),first=t=>t.split(". ")[0].replace(/\.$/,"")+".";
@@ -1295,6 +1345,7 @@ function remEvents(o){
         ev.push({t:st,name:sn+f.name,desc:"Fast start. "+first(f.desc),key:"fb-"+f.name+fkey(d)},{t:en,name:en2+f.name,desc:"Fast end.",key:"fe-"+f.name+fkey(d)})}}})})});
   if(o.weekly)FWEEK.forEach(w=>{if(!o[w.tr])return;let d=td;for(let i=0;i<7&&!w.days.includes(d.getDay());i++)d=addD(d,1);
     ev.push({ad:1,a:d,b:d,name:"Weekly fast: "+w.name,desc:first(w.desc),rrule:"FREQ=WEEKLY;BYDAY="+w.days.map(x=>["SU","MO","TU","WE","TH","FR","SA"][x]).join(",")+";COUNT="+w.days.length*52,key:"weekly-"+w.tr})});
+  if(o.omer){if(!has)skipped.add("Omer times");else[yr,yr+1].forEach(y=>{const st=omerStart(y);if(!st)return;for(let n=1;n<=49;n++){const eve=addD(st,n-2);if(keep(eve,eve))ev.push({t:atH(eve,ptCompute(eve).tzeit),name:"Count the Omer: day "+n,desc:omerText(n),key:"omer"+y+"-"+n})}})}
   if(o.shabbat){if(!has)skipped.add("Shabbat times");else{let d=td;while(d.getDay()!==5)d=addD(d,1);for(let i=0;i<52;i++,d=addD(d,7)){const t=ptCompute(d),sat=addD(d,1),ts=ptCompute(sat);
     ev.push({t:atH(d,t.sunset-18/60),name:"Shabbat candle lighting",desc:"Light the Shabbat candles about 18 minutes before sunset. Customs vary.",key:"candles"+fkey(d)},{t:atH(sat,ts.tzeit),name:"Shabbat ends (Havdalah)",desc:"Shabbat ends at nightfall. Customs vary.",key:"havdalah"+fkey(sat)})}}}
   return{ev,skipped:[...skipped]};
@@ -1425,6 +1476,92 @@ function tabSave(){if(!isAdmin){toast("Sign in as an administrator first");retur
 function tabReset(){if(!isAdmin){toast("Sign in as an administrator first");return}if(!confirm("Put all tabs back in the original order and show them all?"))return;saveSettings({tabLayout:""})}
 $("tabEditor").addEventListener("change",e=>{const c=e.target.closest("[data-tabvis]");if(!c)return;const k=c.dataset.tabvis;TABW.hidden=TABW.hidden.filter(x=>x!==k);if(!c.checked)TABW.hidden.push(k)});
 try{Object.assign(SETTINGS,JSON.parse(localStorage.getItem("bpm_settings")||"{}"));applyTabs()}catch(_){}
+
+/* ===== Backup and restore ===== */
+const BK_SKIP=/^(KJVA_CACHE|bpm_settings|bpm_trans|bpm_news|bpm_sermons|bpm_parsha_.*)$/;
+function backupMake(){const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^bpm_/.test(k)&&!BK_SKIP.test(k))d[k]=localStorage.getItem(k)}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify({app:"bpm",version:1,exported:new Date().toISOString(),data:d})],{type:"application/json"}));a.download="bpm-my-data-"+fkey(new Date())+".json";document.body.appendChild(a);a.click();a.remove();toast("Backup downloaded ("+Object.keys(d).length+" items)")}
+$("bkFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(j.app!=="bpm"||!j.data)throw 0;const ks=Object.keys(j.data).filter(k=>/^bpm_/.test(k)&&!BK_SKIP.test(k));if(!ks.length){toast("That backup is empty");return}
+  if(!confirm("Restore "+ks.length+" items? This replaces matching data on this device."))return;ks.forEach(k=>{try{localStorage.setItem(k,String(j.data[k]))}catch(_){}});toast("Restored. Reloading…");setTimeout(()=>location.reload(),900)}catch(_){toast("That is not a valid backup file")}};r.readAsText(f);e.target.value=""});
+/* ===== Accessibility ===== */
+const A11={ts:1,hc:false,big:false};try{Object.assign(A11,JSON.parse(localStorage.getItem("bpm_a11y")||"{}"))}catch(_){}
+function a11yApply(){const h=document.documentElement;h.classList.toggle("hc",!!A11.hc);h.classList.toggle("bigbtn",!!A11.big);h.style.setProperty("--ts",A11.ts);$("a11yTs").value=A11.ts;$("a11yTsLbl").textContent=Math.round(A11.ts*100)+"%";$("a11yHc").checked=!!A11.hc;$("a11yBig").checked=!!A11.big}
+function a11yChange(){A11.ts=+$("a11yTs").value;A11.hc=$("a11yHc").checked;A11.big=$("a11yBig").checked;try{localStorage.setItem("bpm_a11y",JSON.stringify(A11))}catch(_){}a11yApply()}
+["a11yTs","a11yHc","a11yBig"].forEach(i=>$(i).addEventListener("input",a11yChange));a11yApply();
+/* ===== Verse as picture ===== */
+async function verseImage(ref,text){
+  const W=1080,H=1080,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+  const gr=g.createLinearGradient(0,0,W,H);gr.addColorStop(0,"#0b1b33");gr.addColorStop(1,"#1d4e88");g.fillStyle=gr;g.fillRect(0,0,W,H);
+  g.strokeStyle="rgba(245,197,66,.7)";g.lineWidth=6;g.strokeRect(40,40,W-80,H-80);
+  let size=64;const maxW=W-200,wrap=()=>{g.font="italic "+size+"px Georgia, serif";const L=[];let cur="";String(text).split(/\s+/).forEach(w=>{const t=cur?cur+" "+w:w;if(g.measureText(t).width>maxW&&cur){L.push(cur);cur=w}else cur=t});if(cur)L.push(cur);return L};
+  let lines=wrap();while(lines.length*size*1.35>H-420&&size>26){size-=2;lines=wrap()}
+  g.fillStyle="#fff";g.textAlign="center";g.textBaseline="top";let y=Math.max(150,(H-lines.length*size*1.35)/2-50);lines.forEach(l=>{g.fillText(l,W/2,y);y+=size*1.35});
+  g.font="bold 48px Georgia, serif";g.fillStyle="#f5c542";g.fillText("— "+ref,W/2,y+30);
+  g.font="30px system-ui, sans-serif";g.fillStyle="rgba(255,255,255,.75)";g.fillText("Brandon Partin Ministries",W/2,H-110);
+  const blob=await new Promise(r=>c.toBlob(r,"image/png")),file=new File([blob],ref.replace(/[^A-Za-z0-9]+/g,"-")+".png",{type:"image/png"});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:ref});return}catch(e){if(e&&e.name==="AbortError")return}}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=file.name;document.body.appendChild(a);a.click();a.remove();toast("Picture saved");
+}
+/* ===== Omer ===== */
+const OW=["Lovingkindness","Strength and discipline","Beauty and truth","Endurance and perseverance","Humility and gratitude","Foundation and connection","Dignity and leadership"];
+function hebNowDate(){const now=new Date(),t=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12);if(PT.lat!=null){try{const x=ptCompute(t);if(isFinite(x.sunset)&&now.getHours()+now.getMinutes()/60>=_fh(x.sunset))return{d:addD(t,1),after:true}}catch(_){}}return{d:t,after:false}}
+function omerStart(y){const a=hebMap(y)["nis|16"];return a&&a[0]}
+function omerDay(d){for(const y of[d.getFullYear()-1,d.getFullYear(),d.getFullYear()+1]){const st=omerStart(y);if(!st)continue;const n=Math.round((d-st)/864e5)+1;if(n>=1&&n<=49)return n}return 0}
+function omerText(n){const w=Math.floor(n/7),r=n%7;return"Today is day "+n+" of the Omer"+(n>=7?", which is "+w+(w===1?" week":" weeks")+(r?" and "+r+(r===1?" day":" days"):""):"")+"."}
+function omerThought(n){const wk=OW[Math.ceil(n/7)-1].toLowerCase(),dy=OW[(n-1)%7].toLowerCase();return"This is week "+Math.ceil(n/7)+", a week of "+wk+". Today pairs it with "+dy+". Take a quiet moment to think of one way to practice "+dy+" as part of "+wk+" today."}
+function omerRender(){
+  const H=hebNowDate(),n=omerDay(H.d),fd=d=>d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  const ho=$("hdOmer");if(ho){ho.hidden=!n;if(n)ho.innerHTML='🌾 <b>Omer:</b> day '+n+' of 49 <button type="button" class="secondary chipbtn" data-screen="omer">Open</button>'}
+  let h="";
+  if(n){const st=omerStart(H.d.getFullYear())||omerStart(H.d.getFullYear()-1);
+    h='<div style="text-align:center;font-size:3rem;font-weight:800">'+n+'</div><p style="text-align:center;margin-top:0"><b>Day '+n+' of 49</b></p><p>'+escapeHtml(omerText(n))+'</p><div style="height:10px;background:rgba(128,128,128,.25);border-radius:6px;overflow:hidden;margin:6px 0"><div style="height:100%;width:'+Math.round(n/49*100)+'%;background:#d68910"></div></div><p>'+escapeHtml(omerThought(n))+'</p><p class="muted">'+(H.after?"The count for the new Hebrew day began at sunset. ":"The count is said in the evening after nightfall for the day that is beginning. ")+'Scripture: Leviticus 23:15-16; Deuteronomy 16:9-10.</p><button type="button" class="secondary" data-readref="Leviticus|23">📖 Read Leviticus 23</button>'}
+  else{let nx=null;for(const y of[H.d.getFullYear(),H.d.getFullYear()+1]){const st=omerStart(y);if(st&&st>H.d){nx=st;break}}
+    h='<p>The Omer is not being counted right now.</p>'+(nx?'<p>The next count begins at sunset on <b>'+escapeHtml(fd(addD(nx,-1)))+'</b>, the evening before 16 Nisan, and runs for 49 days until Shavuot (Pentecost).</p>':"")+'<p class="muted">Leviticus 23:15-16 tells us to count seven weeks from the day after the Sabbath of Passover week. Turn on "Counting the Omer" in Reminders for a nightly alarm.</p>'}
+  $("omerBody").innerHTML=h;
+}
+/* ===== Torah portion (Hebcal) ===== */
+const ISR=()=>localStorage.getItem("bpm_isr")==="1";
+async function parshaYear(y){const key="bpm_parsha_"+y+(ISR()?"i":"d");let c=null;try{c=JSON.parse(localStorage.getItem(key)||"null")}catch(_){}
+  if(c&&Date.now()-c.t<30*864e5)return c.v;
+  try{const r=await fetch("https://www.hebcal.com/hebcal?v=1&cfg=json&s=on&year="+y+"&month=x&i="+(ISR()?"on":"off")+"&leyning=on");if(!r.ok)throw 0;const j=await r.json();
+    const v=(j.items||[]).filter(x=>x.category==="parashat").map(x=>({d:x.date,t:String(x.title||"").replace(/^Parashat /,""),he:x.hebrew||"",tr:(x.leyning&&x.leyning.torah)||""}));try{localStorage.setItem(key,JSON.stringify({t:Date.now(),v}))}catch(_){}return v}catch(_){return c?c.v:null}}
+async function parshaRender(){
+  const t=new Date();t.setHours(12,0,0,0);const k=fkey(t);let all=[],bad=false;
+  for(const y of[t.getFullYear(),t.getFullYear()+1]){const v=await parshaYear(y);if(v)all=all.concat(v);else bad=true}
+  const up=all.filter(x=>x.d>=k),a=up[0],body=$("parshaBody");$("parshaIsr").checked=ISR();
+  const ref=x=>{const m=x.tr.match(/^((?:[1-3] )?[A-Za-z]+(?: [A-Za-z]+)*) (\d+):/);return m?'<button type="button" class="secondary chipbtn" data-readref="'+m[1]+'|'+m[2]+'">📖 Read</button>':""};
+  const pl=$("hdParsha");
+  if(!a){if(pl)pl.hidden=true;body.innerHTML='<p class="muted">Could not load the Torah portion. Connect to the internet and try again.</p>';return}
+  const dt=x=>new Date(x.d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"});
+  if(pl){pl.hidden=false;pl.innerHTML='📜 <b>Torah portion:</b> '+escapeHtml(a.t)+' <span class="muted">('+escapeHtml(dt(a))+')</span>'}
+  body.innerHTML='<h3 style="margin:8px 0 2px">'+escapeHtml(a.t)+' <span class="heb" style="font-size:1.2rem;display:inline">'+escapeHtml(a.he)+'</span></h3><div class="muted">'+escapeHtml(dt(a))+(a.tr?' · '+escapeHtml(a.tr):'')+'</div><p>'+ref(a)+'</p><h4>Coming up</h4>'+up.slice(1,6).map(x=>'<div style="margin:4px 0"><b>'+escapeHtml(x.t)+'</b> <span class="muted">'+escapeHtml(dt(x))+(x.tr?' · '+escapeHtml(x.tr):'')+'</span></div>').join("");
+}
+$("parshaIsr").addEventListener("change",e=>{try{localStorage.setItem("bpm_isr",e.target.checked?"1":"0")}catch(_){}parshaRender()});
+/* ===== Prayer wall ===== */
+let WALL=[],WALLP=[];const wallPrayed=()=>{try{return JSON.parse(localStorage.getItem("bpm_wall_prayed")||"[]")}catch(_){return[]}};
+async function wallLoad(){
+  if(!supabaseClient){$("wallList").innerHTML='<div class="card"><p class="muted">The prayer wall is not available right now.</p></div>';return}
+  try{const {data,error}=await supabaseClient.from("prayer_wall").select("*").eq("approved",true).order("created_at",{ascending:false});if(error)throw error;WALL=data||[]}catch(_){WALL=[]}
+  wallRender();if(isAdmin)wallPendingLoad()}
+function wallRender(){const done=wallPrayed();$("wallList").innerHTML=WALL.length?WALL.map((x,i)=>'<div class="card"><div class="muted">'+escapeHtml(x.display_name||"Anonymous")+' · '+escapeHtml(new Date(x.created_at).toLocaleDateString())+'</div><p style="white-space:pre-wrap">'+escapeHtml(x.request)+'</p><button type="button" class="secondary chipbtn" data-wallpray="'+i+'"'+(done.includes(x.id)?" disabled":"")+'>🙏 '+(done.includes(x.id)?"You prayed":"I prayed")+' ('+(x.prayed_count||0)+')</button></div>').join(""):'<div class="card"><p class="muted">No requests are showing yet.</p></div>'}
+async function wallPray(i){const x=WALL[i];if(!x||!supabaseClient)return;const done=wallPrayed();if(done.includes(x.id))return;
+  try{const {error}=await supabaseClient.rpc("pray_for",{p_id:x.id});if(error)throw error}catch(_){toast("Could not record that right now");return}
+  done.push(x.id);try{localStorage.setItem("bpm_wall_prayed",JSON.stringify(done))}catch(_){}x.prayed_count=(x.prayed_count||0)+1;wallRender()}
+async function wallSend(){
+  if(!supabaseClient){toast("The prayer wall is not available right now");return}
+  const r=$("wallText").value.trim();if(!r){toast("Write your request first");return}if(r.length>600){toast("Please keep it under 600 characters");return}if(!$("wallOk").checked){toast("Please check the box to confirm");return}
+  if(Date.now()-(+localStorage.getItem("bpm_wall_last")||0)<60000){toast("Please wait a minute before sending another");return}
+  const {error}=await supabaseClient.from("prayer_wall").insert({display_name:$("wallName").value.trim().slice(0,40)||null,request:r,approved:false,prayed_count:0});
+  if(error){toast("Could not send: "+error.message);return}
+  try{localStorage.setItem("bpm_wall_last",String(Date.now()))}catch(_){}$("wallText").value="";$("wallOk").checked=false;toast("Thank you. Your request will show after it is reviewed.");if(isAdmin)wallPendingLoad()}
+async function wallPendingLoad(){if(!isAdmin||!supabaseClient)return;try{const {data}=await supabaseClient.from("prayer_wall").select("*").eq("approved",false).order("created_at",{ascending:true});WALLP=data||[]}catch(_){WALLP=[]}wallPendingRender()}
+function wallPendingRender(){const b=$("wallPending");if(!b)return;b.innerHTML=WALLP.length?WALLP.map((x,i)=>'<div class="result" style="margin:8px 0"><div class="muted">'+escapeHtml(x.display_name||"Anonymous")+'</div><p style="white-space:pre-wrap">'+escapeHtml(x.request)+'</p><button type="button" class="primary chipbtn" data-wallmod="ok|'+i+'">✔ Approve</button><button type="button" class="secondary chipbtn" data-wallmod="del|'+i+'">Delete</button></div>').join(""):'<p class="muted">No requests waiting for review.</p>'}
+async function wallMod(a,i){const x=WALLP[i];if(!x||!isAdmin)return;const q=supabaseClient.from("prayer_wall");const {error}=a==="ok"?await q.update({approved:true}).eq("id",x.id):await q.delete().eq("id",x.id);if(error){toast(error.message);return}toast(a==="ok"?"Approved":"Deleted");wallLoad()}
+document.querySelector("[data-screen=wall]")?.addEventListener("click",()=>wallLoad());
+document.querySelector("[data-screen=omer]")?.addEventListener("click",()=>omerRender());
+document.querySelector("[data-screen=hebcal]")?.addEventListener("click",()=>parshaRender());
+const _pe=$("privEmail");if(_pe)_pe.textContent=SETTINGS.prayerEmail;document.querySelectorAll(".privE").forEach(x=>x.textContent=SETTINGS.prayerEmail);
+omerRender();parshaRender();wallLoad();setInterval(omerRender,60000);
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

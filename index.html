@@ -43,6 +43,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .fday{width:auto;min-height:44px;padding:2px;border-radius:8px;font-size:.95rem;border:1px solid rgba(128,128,128,.25);background:transparent;color:inherit}
 .fday.today{outline:2px solid #3b82f6}.fday.empty{border:0;visibility:hidden}
 .fday.shab{background:rgba(59,130,246,.12)}
+.navlinks .tabHidden{display:none!important}
 .fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
 .srmPlayer iframe,.srmPlayer video{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}.srmPlayer audio{width:100%}
 .ptItem{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden}.ptHead{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:transparent;color:inherit;border:0;padding:12px;font-size:1rem;min-height:48px}.ptBody{padding:0 12px 12px}.ptBody h4{margin:12px 0 4px}.arab,.heb{font-size:1.5rem;line-height:2;direction:rtl;text-align:right}.ptNext{background:rgba(245,197,66,.15)}
@@ -201,6 +202,8 @@ body.light .toast{background:#172033;color:#fff}
         <input id="srmTitle" placeholder="Sermon title"><input id="srmSpeaker" placeholder="Speaker (optional)"><input id="srmDate" type="date"><textarea id="srmDesc" rows="3" placeholder="Short description (optional)"></textarea>
         <input id="srmLink" placeholder="YouTube link"><label class="muted">Or upload a file</label><input id="srmFile" type="file" accept="audio/*,video/*">
         <button type="button" class="primary" data-action="sermonPublish">Publish sermon</button></div></div>
+      <div class="card"><h2>🧭 Arrange tabs</h2><p class="muted">Move tabs up or down and choose which ones show. After you save, the new order applies for everyone, once the setup file has been run in Supabase. Home and Admin always stay visible.</p>
+        <div id="tabEditor"></div><button type="button" class="primary" data-action="tabSave">Save arrangement</button> <button type="button" class="secondary" data-action="tabReset">Reset to default</button></div>
       <div class="card"><h2>📣 Post an announcement or event</h2><div class="stack">
         <input id="newsTitle" placeholder="Title"><textarea id="newsBody" rows="3" placeholder="Details (optional)"></textarea>
         <label class="muted">Event date and time (leave blank for a plain announcement)</label><input id="newsDate" type="date"><input id="newsTime" type="time">
@@ -709,6 +712,7 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const tmv=e.target.closest("[data-tabmv]");if(tmv){if(!tmv.disabled){const [k,d]=tmv.dataset.tabmv.split("|");tabMove(k,+d)}return}
  const dn=e.target.closest("[data-done]");if(dn){const [k,n]=dn.dataset.done.split("|");doneToggle(k,+n);return}
  const po=e.target.closest("[data-pgopen]");if(po){const [k,n]=po.dataset.pgopen.split("|");if(k==="s")openLesson(+n-1);else{devIndex=+n-1;renderDevotional();showScreen("devotional")}return}
  const pj=e.target.closest("[data-pj]");if(pj){const [a,id]=pj.dataset.pj.split("|");pjAct(a,+id);return}
@@ -761,6 +765,8 @@ function handleTap(e){
   case"hcNext":HC.ref=addD(HC.days[HC.days.length-1],1);hcRender();break;
   case"hcToday":{const n=new Date();HC.ref=new Date(n.getFullYear(),n.getMonth(),n.getDate(),12);hcRender();hcPick(fkey(HC.ref));break}
   case"remMake":remMake();break;
+  case"tabSave":tabSave();break;
+  case"tabReset":tabReset();break;
   case"votdShare":votdShare();break;
   case"newsPublish":newsPublish();break;
   case"openLive":{const u=safeUrl(SETTINGS.liveUrl);if(u)window.open(u,"_blank","noopener");break}
@@ -885,7 +891,7 @@ function feastRender(){
 $("feastDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
 $("feastLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("");
 feastRender();feastDetailShow();
-const SET_DEF={prayerEmail:"brandonpartinministries@gmail.com",youtubeChannel:"",liveUrl:"",donateUrl:"",donateLabel:"Give now",giveNotes:"",admin_processor:"",admin_bankName:"",admin_payoutUrl:""};
+const SET_DEF={prayerEmail:"brandonpartinministries@gmail.com",youtubeChannel:"",liveUrl:"",tabLayout:"",donateUrl:"",donateLabel:"Give now",giveNotes:"",admin_processor:"",admin_bankName:"",admin_payoutUrl:""};
 let SETTINGS=Object.assign({},SET_DEF),SERMONS=[];
 const safeUrl=u=>{u=String(u||"").trim();return /^https?:\/\//i.test(u)?u:""};
 const ytId=u=>{const m=String(u).match(/(?:youtu\.be\/|[?&]v=|embed\/|shorts\/|live\/)([\w-]{11})/);return m?m[1]:null};
@@ -894,7 +900,7 @@ function applySettings(){
   $("giveBtn").textContent="💝 "+(S.donateLabel||"Give now");
   $("giveNotes").textContent=S.giveNotes||"";$("giveNotes").hidden=!S.giveNotes;
   $("giveSetup").hidden=!(isAdmin&&!safeUrl(S.donateUrl));
-  $("srmChannel").hidden=!safeUrl(S.youtubeChannel);const nl=$("newsLive");if(nl)nl.hidden=!safeUrl(S.liveUrl);
+  $("srmChannel").hidden=!safeUrl(S.youtubeChannel);const nl=$("newsLive");if(nl)nl.hidden=!safeUrl(S.liveUrl);try{applyTabs()}catch(_){}
   [["setEmail","prayerEmail"],["setChannel","youtubeChannel"],["setLive","liveUrl"],["setDonateUrl","donateUrl"],["setDonateLabel","donateLabel"],["setGiveNotes","giveNotes"],["setProcessor","admin_processor"],["setBank","admin_bankName"],["setPayoutUrl","admin_payoutUrl"]].forEach(([id,k])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=S[k]||""});
 }
 async function loadSettings(){
@@ -1401,6 +1407,24 @@ function strSearch(){
 function offBar(){$("offlineBar").hidden=navigator.onLine}
 window.addEventListener("online",offBar);window.addEventListener("offline",offBar);offBar();
 pjLoad();pjRender();pgRender();devDoneBtn();votdRender();setInterval(votdRender,3000);loadNews();strongsLoad();
+
+/* ===== Arrange tabs (admin) ===== */
+const TAB_DEFAULT=[...document.querySelectorAll(".navlinks button")].map(b=>({k:b.dataset.screen||b.dataset.action,label:b.textContent.trim()}));
+let TABLAY={order:[],hidden:[]},TABW=null;
+const tabBtn=k=>[...document.querySelectorAll(".navlinks button")].find(b=>(b.dataset.screen||b.dataset.action)===k);
+const tabLocked=k=>k==="home"||k==="admin";
+function tabParse(){try{const j=JSON.parse(SETTINGS.tabLayout||"{}");TABLAY={order:Array.isArray(j.order)?j.order:[],hidden:Array.isArray(j.hidden)?j.hidden:[]}}catch(_){TABLAY={order:[],hidden:[]}}}
+function tabOrdered(){const ks=TAB_DEFAULT.map(t=>t.k),o=TABLAY.order.filter((k,i,a)=>ks.includes(k)&&a.indexOf(k)===i);ks.forEach(k=>{if(!o.includes(k))o.push(k)});return o}
+function applyTabs(){tabParse();const nav=document.querySelector(".navlinks");if(!nav)return;
+  tabOrdered().forEach(k=>{const b=tabBtn(k);if(b){nav.appendChild(b);b.classList.toggle("tabHidden",TABLAY.hidden.includes(k)&&!tabLocked(k))}});
+  TABW={order:tabOrdered(),hidden:TABLAY.hidden.filter(k=>!tabLocked(k))};tabAdminRender()}
+function tabAdminRender(){const box=$("tabEditor");if(!box||!TABW)return;
+  box.innerHTML=TABW.order.map((k,i)=>{const t=TAB_DEFAULT.find(x=>x.k===k);if(!t)return"";return '<div style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:6px;border:1px solid rgba(128,128,128,.25);border-radius:10px"><span style="flex:1">'+escapeHtml(t.label)+'</span><label style="display:flex;align-items:center;gap:4px;font-size:.8rem"><input type="checkbox" data-tabvis="'+k+'" style="width:auto"'+(TABW.hidden.includes(k)?"":" checked")+(tabLocked(k)?" disabled":"")+'>Show</label><button type="button" class="secondary chipbtn" data-tabmv="'+k+'|-1"'+(i===0?" disabled":"")+'>↑</button><button type="button" class="secondary chipbtn" data-tabmv="'+k+'|1"'+(i===TABW.order.length-1?" disabled":"")+'>↓</button></div>'}).join("")}
+function tabMove(k,d){const o=TABW.order,i=o.indexOf(k),j=i+d;if(i<0||j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];tabAdminRender()}
+function tabSave(){if(!isAdmin){toast("Sign in as an administrator first");return}saveSettings({tabLayout:JSON.stringify({order:TABW.order,hidden:TABW.hidden.filter(k=>!tabLocked(k))})})}
+function tabReset(){if(!isAdmin){toast("Sign in as an administrator first");return}if(!confirm("Put all tabs back in the original order and show them all?"))return;saveSettings({tabLayout:""})}
+$("tabEditor").addEventListener("change",e=>{const c=e.target.closest("[data-tabvis]");if(!c)return;const k=c.dataset.tabvis;TABW.hidden=TABW.hidden.filter(x=>x!==k);if(!c.checked)TABW.hidden.push(k)});
+try{Object.assign(SETTINGS,JSON.parse(localStorage.getItem("bpm_settings")||"{}"));applyTabs()}catch(_){}
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

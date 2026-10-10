@@ -42,6 +42,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .fdow{text-align:center;font-size:.75rem;opacity:.7}
 .fday{width:auto;min-height:44px;padding:2px;border-radius:8px;font-size:.95rem;border:1px solid rgba(128,128,128,.25);background:transparent;color:inherit}
 .fday.today{outline:2px solid #3b82f6}.fday.empty{border:0;visibility:hidden}
+.fday.shab{background:rgba(59,130,246,.12)}
 .fday.sel{box-shadow:0 0 0 3px rgba(245,197,66,.8)}
 .srmPlayer iframe,.srmPlayer video{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}.srmPlayer audio{width:100%}
 .ptItem{border:1px solid var(--line);border-radius:12px;margin:8px 0;overflow:hidden}.ptHead{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:transparent;color:inherit;border:0;padding:12px;font-size:1rem;min-height:48px}.ptBody{padding:0 12px 12px}.ptBody h4{margin:12px 0 4px}.arab,.heb{font-size:1.5rem;line-height:2;direction:rtl;text-align:right}.ptNext{background:rgba(245,197,66,.15)}
@@ -85,7 +86,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="bible">Bible</button>
     <button type="button" data-screen="concordance">Concordance</button>
     <button type="button" data-screen="feasts">Feasts</button>
-    <button type="button" data-screen="hebrew">Hebrew Calendar</button>
+    <button type="button" data-screen="hebcal">Hebrew Calendar</button>
     <button type="button" data-screen="fasts">Fasts</button>
     <button type="button" data-screen="sermons">Sermons</button>
     <button type="button" data-screen="times">Prayer Times</button>
@@ -121,8 +122,8 @@ body.light .toast{background:#172033;color:#fff}
       <div class="tile"><small class="muted">Hebrew</small><h3 id="hdHeb" style="margin:6px 0 0"></h3></div>
       <div class="tile"><small class="muted">Julian</small><h3 id="hdJul" style="margin:6px 0 0"></h3></div>
     </div>
-    <p class="muted" style="margin-bottom:0;font-size:.85rem">The Hebrew day begins at sunset the evening before.</p><button type="button" class="secondary" data-screen="hebrew" style="margin-top:10px">✡️ Open the Hebrew calendar</button>
-  </div>
+    <p id="hdNote" class="muted" style="margin-bottom:0;font-size:.85rem"></p>
+    <button type="button" class="secondary" data-screen="hebcal" style="margin-top:10px">✡️ Open the Hebrew calendar</button></div>
   <div class="grid">
     <div class="tile"><b>📖 Bible</b><p>Read and search the full KJV Bible with Apocrypha.</p><button type="button" class="secondary" data-action="openBible">Open</button></div>
     <div class="tile"><b>📚 Studies</b><p>Work through guided Bible study lessons.</p><button type="button" class="secondary" data-action="openStudies">Study</button></div>
@@ -250,16 +251,6 @@ body.light .toast{background:#172033;color:#fff}
   <div id="feastDetail" class="card"></div>
   <div class="card"><h2 id="feastListTitle">Dates this year</h2><div id="feastList"></div></div>
 </section>
-<section id="hebrew" class="screen">
-  <div class="card"><span class="pill">✡️ Hebrew Calendar</span><h1>The Hebrew Calendar</h1>
-    <p class="muted">Each Hebrew month with its Gregorian dates and the feasts of the Lord. Days begin at sundown on the evening before. Tap a day for its Gregorian, Hebrew and Julian dates.</p>
-    <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><button type="button" class="secondary chipbtn" data-action="hebPrev" aria-label="Previous month">‹</button><b id="hebTitle" style="flex:1;text-align:center"></b><button type="button" class="secondary chipbtn" data-action="hebNext" aria-label="Next month">›</button><button type="button" class="secondary chipbtn" data-action="hebToday">Today</button></div>
-    <div id="hebSub" class="muted" style="text-align:center;margin-bottom:8px"></div>
-    <div id="hebDow" class="fgrid"></div><div id="hebGrid" class="fgrid"></div>
-    <div id="hebLegend" style="margin-top:10px"></div>
-  </div>
-  <div id="hebDetail" class="card"></div>
-</section>
 <section id="times" class="screen">
   <div class="card"><span class="pill">🕰️ Prayer Times</span><h1>Hours of Prayer</h1>
     <p class="muted">Pick a tradition, then tap any prayer for a guided walk-through. Islamic times are calculated for your location. Christian hours use traditional times, with morning and evening following sunrise and sunset.</p>
@@ -279,6 +270,14 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" class="primary" data-action="ptIcs">📅 Add alarms to my calendar (next 30 days)</button>
     <p class="muted">This makes a file with one event and alarm for each time in the tradition you are viewing. Open it and your Calendar app adds them. Make another file each month, since the Islamic times shift through the year.</p></div>
   <div class="card"><div id="ptList"></div><div id="ptExtra"></div><p class="muted" id="ptNote"></p></div>
+</section>
+<section id="hebcal" class="screen">
+  <div class="card"><span class="pill">🕎 Hebrew Calendar</span><h1 id="hcTitle"></h1><div id="hcHeb" class="heb" style="text-align:center"></div><p class="muted" id="hcSpan" style="text-align:center"></p>
+    <div style="display:flex;align-items:center;gap:8px;margin:10px 0"><button type="button" class="secondary chipbtn" data-action="hcPrev" aria-label="Previous month">‹</button><span style="flex:1"></span><button type="button" class="secondary chipbtn" data-action="hcToday">Today</button><button type="button" class="secondary chipbtn" data-action="hcNext" aria-label="Next month">›</button></div>
+    <div id="hcDow" class="fgrid"></div><div id="hcGrid" class="fgrid"></div><div id="hcLegend" style="margin-top:10px"></div>
+    <p class="muted">Each box shows the Hebrew day in large type with the matching civil date beneath it. Colored days are the feasts, fasts, Hanukkah and Purim. Tap a day for details. Each Hebrew day begins at sunset the evening before.</p></div>
+  <div id="hcDetail" class="card"></div>
+  <div class="card"><h2>This month</h2><div id="hcList"></div></div>
 </section>
 <section id="fasts" class="screen">
   <div class="card"><span class="pill">🍞 Fasting</span><h1>Fasts</h1>
@@ -662,6 +661,7 @@ function handleTap(e){
  const delDev=e.target.closest("[data-admin-delete-dev]");if(delDev){deleteCloud("devotionals",delDev.dataset.adminDeleteDev);return;}
  const tk=e.target.closest("[data-track]");if(tk){playTrack(Number(tk.dataset.track));return}
  const td=e.target.closest("[data-trackdel]");if(td){tracks.splice(Number(td.dataset.trackdel),1);saveTracks();renderTracks();return}
+ const hcd=e.target.closest("[data-hcday]");if(hcd){hcPick(hcd.dataset.hcday);return}
  const ff=e.target.closest("[data-fastf]");if(ff){FS.f=ff.dataset.fastf;fastRender();return}
  const pts=e.target.closest("[data-ptspeak]");if(pts){ptSpeak(pts.dataset.ptspeak);return}
  if(e.target.closest("[data-ptstop]")){speakStop();return}
@@ -669,7 +669,6 @@ function handleTap(e){
  const ptf=e.target.closest("[data-ptfaith]");if(ptf){PT.faith=ptf.dataset.ptfaith;ptSave();ptRender();return}
  const sp=e.target.closest("[data-sermon-play]");if(sp){sermonPlay(+sp.dataset.sermonPlay);return}
  const sdl=e.target.closest("[data-sermon-del]");if(sdl){sermonDelete(+sdl.dataset.sermonDel);return}
- const hd=e.target.closest("[data-hday]");if(hd){const p=hd.dataset.hday.split("-");hebSel=hd.dataset.hday;hebRender(new Date(+p[0],+p[1]-1,+p[2],12));return}
  const fd=e.target.closest("[data-fday]");if(fd){feastPick(fd.dataset.fday);return}
  const cl=e.target.closest("[data-conc-letter]");if(cl){concLetter(cl.dataset.concLetter);return}
  const cw=e.target.closest("[data-conc-word]");if(cw){concSearch(cw.dataset.concWord);return}
@@ -704,6 +703,9 @@ function handleTap(e){
   case"adminLogout":adminLogout();break;
   case"todayStudy":openLesson(DOY-1);break;
   case"concSearch":concSearch();break;
+  case"hcPrev":HC.ref=addD(HC.days[0],-1);hcRender();break;
+  case"hcNext":HC.ref=addD(HC.days[HC.days.length-1],1);hcRender();break;
+  case"hcToday":{const n=new Date();HC.ref=new Date(n.getFullYear(),n.getMonth(),n.getDate(),12);hcRender();hcPick(fkey(HC.ref));break}
   case"fastPrev":FS.y--;fastRender();break;
   case"fastNext":FS.y++;fastRender();break;
   case"fastToday":FS.y=new Date().getFullYear();fastRender();break;
@@ -721,9 +723,6 @@ function handleTap(e){
   case"sermonPublish":sermonPublish();break;
   case"adminSaveSite":adminSaveSite();break;
   case"adminSavePayout":adminSavePayout();break;
-  case"hebPrev":hebMove(-1);break;
-  case"hebNext":hebMove(1);break;
-  case"hebToday":hebAnchor=new Date();hebSel=null;hebRender();break;
   case"feastPrev":feastMove(-1);break;
   case"feastNext":feastMove(1);break;
   case"feastToday":{const n=new Date();feastY=n.getFullYear();feastM=n.getMonth();feastRender();feastDetailShow();break}
@@ -826,46 +825,6 @@ function feastRender(){
 $("feastDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
 $("feastLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("");
 feastRender();feastDetailShow();
-/* ---- Hebrew + Julian calendars ---- */
-const hebFmt=new Intl.DateTimeFormat("en-u-ca-hebrew",{year:"numeric",month:"long",day:"numeric"});
-function hebParts(d){const o={};hebFmt.formatToParts(d).forEach(p=>{o[p.type]=p.value});return{y:parseInt(o.year,10),mn:o.month||"",mo:(o.month||"").toLowerCase().slice(0,3),d:parseInt(o.day,10)}}
-const JUL_MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
-function julianOf(d){ // Gregorian Date -> Julian-calendar date
-  const y=d.getFullYear(),m=d.getMonth()+1,dd=d.getDate(),a=Math.floor((14-m)/12),yy=y+4800-a,mm=m+12*a-3;
-  const jdn=dd+Math.floor((153*mm+2)/5)+365*yy+Math.floor(yy/4)-Math.floor(yy/100)+Math.floor(yy/400)-32045;
-  const c=jdn+32082,dq=Math.floor((4*c+3)/1461),e=c-Math.floor(1461*dq/4),mq=Math.floor((5*e+2)/153);
-  return{d:e-Math.floor((153*mq+2)/5)+1,m:mq+3-12*Math.floor(mq/10),y:dq-4800+Math.floor(mq/10)}}
-const julStr=d=>{const j=julianOf(d);return JUL_MONTHS[j.m-1]+" "+j.d+", "+(j.y>0?j.y:(1-j.y)+" BC")};
-const hebStr=d=>{const h=hebParts(d);return h.d+" "+h.mn+" "+h.y};
-const gregStr=d=>d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
-function homeDatesRender(){const n=new Date(),g=$("hdGreg");if(!g)return;g.textContent=gregStr(n);$("hdHeb").textContent=hebStr(n);$("hdJul").textContent=julStr(n)}
-homeDatesRender();document.addEventListener("visibilitychange",()=>{if(!document.hidden)homeDatesRender()});
-let hebAnchor=new Date(),hebSel=null;
-function hebMonthBounds(a){ // first and last Gregorian day of the Hebrew month containing a
-  const h=hebParts(a);let first=new Date(a.getFullYear(),a.getMonth(),a.getDate()-(h.d-1),12),last=first,n=0;
-  for(let i=1;i<31;i++){const t=new Date(first.getFullYear(),first.getMonth(),first.getDate()+i,12);if(hebParts(t).d<=hebParts(last).d)break;last=t;n++}
-  return{first,last,days:n+1}}
-function hebMove(n){const b=hebMonthBounds(hebAnchor);hebAnchor=n>0?new Date(b.last.getFullYear(),b.last.getMonth(),b.last.getDate()+1,12):new Date(b.first.getFullYear(),b.first.getMonth(),b.first.getDate()-1,12);hebSel=null;hebRender()}
-function hebFeastOn(d,h){return FEASTS.find(F=>h.mo===F.m&&h.d>=F.d1&&h.d<=F.d2)}
-function hebRender(sel){
-  if(sel)hebAnchor=sel;
-  const b=hebMonthBounds(hebAnchor),h0=hebParts(b.first),todayK=fkey(new Date());
-  $("hebTitle").textContent=h0.mn+" "+h0.y;
-  const f=b.first,l=b.last,mfmt={month:"short"};
-  $("hebSub").textContent=f.toLocaleDateString(undefined,{month:"long",day:"numeric"})+" – "+l.toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})+" · "+b.days+" days";
-  let h="";for(let i=0;i<f.getDay();i++)h+='<button class="fday empty" tabindex="-1"></button>';
-  for(let i=0;i<b.days;i++){const d=new Date(f.getFullYear(),f.getMonth(),f.getDate()+i,12),k=fkey(d),hp=hebParts(d),F=hebFeastOn(d,hp);
-    h+='<button type="button" class="fday'+(k===todayK?" today":"")+(k===hebSel?" sel":"")+'" data-hday="'+k+'" style="line-height:1.15;'+(F?'background:'+F.c+';color:#fff':'')+'"'+(F?' title="'+escapeHtml(F.name)+'"':'')+'><b>'+hp.d+'</b><br><small style="opacity:.7;font-size:.7rem">'+(d.getDate()===1?d.toLocaleDateString(undefined,mfmt)+" ":"")+d.getDate()+'</small></button>'}
-  $("hebGrid").innerHTML=h;
-  const sd=hebSel?(p=>new Date(+p[0],+p[1]-1,+p[2],12))(hebSel.split("-")):null;
-  const dd=sd||(hebParts(new Date()).mn===h0.mn&&hebParts(new Date()).y===h0.y?new Date():null);
-  if(dd){const hp=hebParts(dd),F=hebFeastOn(dd,hp);
-    $("hebDetail").innerHTML='<h2>'+escapeHtml(gregStr(dd))+'</h2><div class="stack"><div><span class="muted">Hebrew:</span> <b>'+escapeHtml(hebStr(dd))+'</b></div><div><span class="muted">Julian:</span> <b>'+escapeHtml(julStr(dd))+'</b></div></div>'+(F?feastBlock(F,dd.getFullYear()):'<p class="muted">No appointed feast on this day.</p>')}
-  else $("hebDetail").innerHTML='<p class="muted">Tap a day to see its Gregorian, Hebrew and Julian dates.</p>';
-}
-$("hebDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
-$("hebLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("");
-hebRender();
 const SET_DEF={prayerEmail:"brandonpartinministries@gmail.com",youtubeChannel:"",donateUrl:"",donateLabel:"Give now",giveNotes:"",admin_processor:"",admin_bankName:"",admin_payoutUrl:""};
 let SETTINGS=Object.assign({},SET_DEF),SERMONS=[];
 const safeUrl=u=>{u=String(u||"").trim();return /^https?:\/\//i.test(u)?u:""};
@@ -1060,7 +1019,7 @@ function ptRender(){
     extra=ptItem("how","How to pray (Salah), step by step","",SALAH,false);
     $("ptNote").textContent="Times are calculated for your location using the method you chose and may differ from your local mosque by a few minutes. Follow your mosque or scholar where they differ. Wording and details vary by school, so learn the prayer from a qualified teacher.";
   }
-  $("ptList").innerHTML=html;$("ptExtra").innerHTML=extra;$("ptNotify").checked=!!PT.notify;$("ptAuto").checked=!!PT.autoRead;ptSchedule();
+  $("ptList").innerHTML=html;$("ptExtra").innerHTML=extra;$("ptNotify").checked=!!PT.notify;$("ptAuto").checked=!!PT.autoRead;ptSchedule();try{homeDates()}catch(_){}
 }
 let ptTimers=[],ptAC=null;
 function ptEvents(base,faith){
@@ -1192,6 +1151,53 @@ function fastRender(){
 }
 fastRender();
 document.querySelector("[data-screen=fasts]")?.addEventListener("click",()=>fastRender());
+
+const HF=new Intl.DateTimeFormat("en-u-ca-hebrew",{day:"numeric",month:"long",year:"numeric"});
+let HFH=null,HFM=null;try{HFH=new Intl.DateTimeFormat("he-u-ca-hebrew",{day:"numeric",month:"long",year:"numeric"});HFM=new Intl.DateTimeFormat("he-u-ca-hebrew",{month:"long",year:"numeric"})}catch(_){}
+const MONS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function hebP(d){const ps=HF.formatToParts(d),g=t=>(ps.find(p=>p.type===t)||{}).value||"";return{d:parseInt(g("day"),10),m:g("month"),y:g("year")}}
+function julianOf(d){const J=Math.floor(_jd(d.getFullYear(),d.getMonth()+1,d.getDate())+0.5),c=J+32082,dd=Math.floor((4*c+3)/1461),e=c-Math.floor(1461*dd/4),m=Math.floor((5*e+2)/153);return{J,day:e-Math.floor((153*m+2)/5)+1,month:m+3-12*Math.floor(m/10),year:dd-4800+Math.floor(m/10)}}
+const JUL_MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const julStr=d=>{const j=julianOf(d);return JUL_MONTHS[j.month-1]+" "+j.day+", "+(j.year>0?j.year:(1-j.year)+" BC")};
+function homeDates(){
+  const now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12);let hd=today,after=false;
+  if(PT.lat!=null){try{const t=ptCompute(today);if(isFinite(t.sunset)&&now.getHours()+now.getMinutes()/60>=_fh(t.sunset)){hd=addD(today,1);after=true}}catch(_){}}
+  const p=hebP(hd),j=julianOf(today);
+  $("hdGreg").textContent=today.toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  $("hdHeb").innerHTML=escapeHtml(p.d+" "+p.m+" "+p.y)+(HFH?'<br><span class="heb" style="font-size:1rem;display:inline">'+HFH.format(hd)+'</span>':"");
+  $("hdJul").textContent=julStr(today);
+  $("hdNote").textContent=(after?"The Hebrew day began at sunset. ":PT.lat==null?"The Hebrew day begins at sunset the evening before. Set your location in Prayer Times so the Hebrew date changes then. ":"The Hebrew day begins at sunset the evening before. ")+"Julian Day Number "+j.J+".";
+}
+const HC={ref:(()=>{const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate(),12)})(),sel:null,fm:{},hm:{},days:[]};
+const HOLC="#d35400",FASTC="#7f8c8d";
+function hcFast(y){if(HC.fm[y])return HC.fm[y];const m={};FASTS.filter(f=>f.tr==="j"&&!/^Yom Kippur/.test(f.name)).forEach(f=>{let rr=[];try{rr=f.get(y)}catch(_){}rr.forEach(([a,b])=>{for(let d=a;d<=b;d=addD(d,1))(m[fkey(d)]=m[fkey(d)]||[]).push(f)})});return HC.fm[y]=m}
+function hcHol(y){if(HC.hm[y])return HC.hm[y];const m={},H=hebMap(y),add=(d,o)=>{const k=fkey(d);(m[k]=m[k]||[]).push(o)};
+  (H["kis|25"]||[]).forEach(d=>{for(let i=0;i<8;i++)add(addD(d,i),{n:"Hanukkah, day "+(i+1),c:HOLC,desc:"The Festival of Lights, eight days beginning on 25 Kislev. It remembers the rededication of the Temple in Jerusalem after the Maccabean victory, and a candle is added each night. John 10:22 mentions Jesus at the Feast of Dedication.",ref:"John 10:22; 1 Maccabees 4:36-59"})});
+  ["adar|14","adar2|14"].forEach(k=>(H[k]||[]).forEach(d=>add(d,{n:"Purim",c:HOLC,desc:"Remembers how Queen Esther and Mordecai saved the Jewish people from Haman's plot. The Book of Esther is read aloud, gifts are given to friends and to the poor, and the day is kept with a festive meal. It falls on 14 Adar, in Adar II in a leap year.",ref:"Esther 9:20-28"})));
+  return HC.hm[y]=m}
+function hcMarks(d){const y=d.getFullYear(),k=fkey(d),out=[];
+  (feastYear(y).map[k]||[]).forEach(id=>{const F=FEASTS.find(x=>x.id===id);out.push({n:F.name,c:F.c,desc:F.desc,ref:F.ref})});
+  (hcFast(y)[k]||[]).forEach(f=>out.push({n:f.name,c:FASTC,desc:f.desc,ref:f.ref}));
+  [y,y-1].forEach(yy=>(hcHol(yy)[k]||[]).forEach(x=>out.push(x)));
+  const p=hebP(d);if(p.d===30||(p.d===1&&!/^tishri/i.test(p.m)))out.push({n:"Rosh Chodesh (new month)",c:"",desc:"The new moon, the first day of a Hebrew month. It is a minor festival in the Hebrew calendar with special prayers. When the old month has 30 days, its 30th day and the next 1st day are both Rosh Chodesh.",ref:"Numbers 28:11-15"});
+  return out}
+function hcRender(){
+  const p=hebP(HC.ref),start=addD(HC.ref,-(p.d-1)),days=[];
+  for(let d=start,i=0;i<31;i++,d=addD(d,1)){const q=hebP(d);if(q.m!==p.m||q.y!==p.y)break;days.push(d)}
+  HC.days=days;const sh=d=>d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  $("hcTitle").textContent=p.m+" "+p.y;$("hcHeb").textContent=HFM?HFM.format(start):"";
+  $("hcSpan").textContent=sh(days[0])+" to "+days[days.length-1].toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+  const today=fkey(new Date());let h="";for(let i=0;i<days[0].getDay();i++)h+='<button class="fday empty" tabindex="-1"></button>';
+  days.forEach((d,i)=>{const k=fkey(d),M=hcMarks(d).find(x=>x.c);h+='<button type="button" class="fday'+(k===today?" today":"")+(k===HC.sel?" sel":"")+(d.getDay()===6?" shab":"")+'" data-hcday="'+k+'" style="min-height:54px;line-height:1.1'+(M?";background:"+M.c+";color:#fff":"")+'"><div style="font-weight:700">'+(i+1)+'</div><div style="font-size:.62rem;opacity:.85">'+sh(d)+'</div></button>'});
+  $("hcGrid").innerHTML=h;
+  const L=days.map((d,i)=>{const mk=hcMarks(d);return mk.length?'<div style="margin:6px 0"><b>'+(i+1)+' '+escapeHtml(p.m)+'</b> <span class="muted">· '+escapeHtml(d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}))+'</span><br>'+mk.map(x=>escapeHtml(x.n)).join(", ")+'</div>':""}).join("");
+  $("hcList").innerHTML=L||'<p class="muted">No listed days this month.</p>';
+}
+function hcPick(k){const d=HC.days.find(x=>fkey(x)===k);if(!d)return;HC.sel=k;hcRender();const p=hebP(d),mk=hcMarks(d);
+  $("hcDetail").innerHTML='<h2>'+escapeHtml(p.d+" "+p.m+" "+p.y)+'</h2>'+(HFH?'<div class="heb" style="text-align:center">'+HFH.format(d)+'</div>':"")+'<p>'+escapeHtml(d.toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"}))+'<br><span class="muted">Julian calendar: '+escapeHtml(julStr(d))+'</span>'+(d.getDay()===6?'<br>Shabbat (the Sabbath)':"")+'</p>'+(mk.length?mk.map(x=>'<div style="border-left:5px solid '+(x.c||"#999")+';padding-left:10px;margin:10px 0"><b>'+escapeHtml(x.n)+'</b><p>'+escapeHtml(x.desc)+'</p><p class="muted">'+escapeHtml(x.ref||"")+'</p></div>').join(""):'<p class="muted">No special observance is listed for this day.</p>')}
+$("hcLegend").innerHTML=FEASTS.map(F=>'<span class="pill" style="margin:3px;background:'+F.c+';color:#fff">'+escapeHtml(F.name.split(" (")[0])+'</span>').join("")+[["Jewish fast",FASTC],["Hanukkah and Purim",HOLC]].map(([n,c])=>'<span class="pill" style="margin:3px;background:'+c+';color:#fff">'+n+'</span>').join("");
+$("hcDow").innerHTML=["S","M","T","W","T","F","S"].map(x=>'<div class="fdow">'+x+'</div>').join("");
+hcRender();hcPick(fkey(HC.ref));homeDates();setInterval(homeDates,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)homeDates()});
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");

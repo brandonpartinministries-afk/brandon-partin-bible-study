@@ -1221,9 +1221,7 @@ function ptSpeak(id){
   if(!canSpeak()){toast("Read aloud is not supported in this browser");return}
   const body=$("ptb-"+id);if(!body)return;body.hidden=false;
   const q=ptBodyQueue(body);if(!q.length)return;
-  speechSynthesis.cancel();spQ=q;spI=0;spOn=true;spStarted=false;clearTimeout(spWatch);
-  spWatch=setTimeout(()=>{if(!spStarted)toast("No sound? Turn off silent mode, raise the volume, or pick another voice in the Listen panel.")},3500);
-  spNext();
+  spStart(q);
 }
 $("ptAuto").addEventListener("change",e=>{PT.autoRead=e.target.checked;ptSave();if(PT.autoRead&&!PT.notify){PT.notify=true;$("ptNotify").checked=true;ptSave();ptSchedule();toast("Alerts turned on so the prayer can be read at each time")}});
 $("ptMethod").addEventListener("change",e=>{PT.method=e.target.value;ptSave();ptRender()});
@@ -1816,10 +1814,7 @@ function speakCurrent(){
   else if(onScr("times")){document.querySelectorAll("#times .ptBody:not([hidden])").forEach(b=>q.push(...ptBodyQueue(b)))}
   else if(onScr("studies")&&!$("lessonCard").hidden){q.push({text:$("lessonCard").innerText.replace(/Write reflection|Read in Bible/g,"")});}
   if(!q.length){toast("Open a chapter, devotional, or prayer first");return}
-  if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
-  spQ=q;spI=0;spOn=true;spStarted=false;clearTimeout(spWatch);
-  spWatch=setTimeout(()=>{if(!spStarted)toast("No sound? Turn off silent mode, raise the volume, or pick another voice.")},3500);
-  spNext();
+  spStart(q);
 }
 /* ---- Jewish (English+Hebrew) and Muslim (English+Arabic) reading voices ---- */
 const VM_KEY="bpm_voicemode",voiceMode=()=>localStorage.getItem(VM_KEY)||"";
@@ -1855,11 +1850,33 @@ function vmSync(){
   note.forEach(x=>x.textContent=t);
 }
 document.addEventListener("change",e=>{if(e.target.classList?.contains("voiceModeSel")){try{localStorage.setItem(VM_KEY,e.target.value)}catch(_){}vmSync();toast(e.target.value==="jewish"?"Jewish voice: English + Hebrew":e.target.value==="muslim"?"Muslim voice: English + Arabic":"Standard voice")}});
+let spTok=0;
+function spStart(q){
+  spTok++;spWarned={};spLastEl=null;
+  const busy=speechSynthesis.speaking||speechSynthesis.pending||speechSynthesis.paused;
+  if(busy)speechSynthesis.cancel();
+  try{speechSynthesis.resume()}catch(_){}
+  spQ=q;spI=0;spOn=true;spStarted=false;clearTimeout(spWatch);
+  spWatch=setTimeout(()=>{if(!spStarted)toast("No sound? Turn off silent mode, raise the volume, or pick another voice.")},4500);
+  const t=spTok;
+  if(busy)setTimeout(()=>{if(t===spTok&&spOn)spNext()},250);else spNext();
+}
+function chunkText(text,max){
+  const parts=String(text).match(/[^.!?;:\u06D4\u061F]+[.!?;:\u06D4\u061F]*\s*/g)||[String(text)],out=[];let cur="";
+  parts.forEach(p=>{if(cur&&(cur+p).length>max){out.push(cur.trim());cur=p}else cur+=p});
+  if(cur.trim())out.push(cur.trim());
+  return out;
+}
 function spNext(){
   document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));
   if(!spOn)return;
   if(spI>=spQ.length){spOn=false;spWarned={};if($("autoNext").checked&&onScr("bible")){chapterMove(1);setTimeout(speakCurrent,700);}return}
   const it=spQ[spI];
+  if(!it.chunked&&it.text.length>200){
+    const ch=chunkText(it.text,200);
+    if(ch.length>1){spQ.splice(spI,1,...ch.map(c=>({...it,text:c,chunked:1})));return spNext()}
+    it.chunked=1;
+  }
   if(voiceMode()&&!it.segd&&!it.lang){
     const runs=splitRuns(it.text);
     if(runs.some(r=>r.lang!=="en")){spQ.splice(spI,1,...runs.map(r=>({el:it.el,text:r.text,lang:r.lang,segd:1})));return spNext()}
@@ -1880,11 +1897,11 @@ function spNext(){
     if(v){u.voice=v;u.lang=v.lang}else{const l=TRANS_LIST[TRANS]?.lang;if(l&&!/^en/i.test(l))u.lang=l}
   }
   u.onstart=()=>{spStarted=true};(window.__utts=window.__utts||[]).push(u);if(window.__utts.length>40)window.__utts.shift();
-  u.onend=()=>{spI++;spNext()};u.onerror=()=>{spI++;spNext()};
+  const tk=spTok;u.onend=()=>{if(tk!==spTok)return;spI++;spNext()};u.onerror=()=>{if(tk!==spTok)return;spI++;spNext()};
   if(it.el){it.el.classList.add("speaking");if(it.el!==spLastEl)it.el.scrollIntoView({behavior:"smooth",block:"center"});spLastEl=it.el}
   speechSynthesis.speak(u);
 }
-function speakStop(){spOn=false;spWarned={};spLastEl=null;if(canSpeak())speechSynthesis.cancel();document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));}
+function speakStop(){spOn=false;spTok++;spWarned={};spLastEl=null;if(canSpeak())speechSynthesis.cancel();document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));}
 function saveTracks(){try{localStorage.setItem("bpm_music",JSON.stringify(tracks.filter(t=>!t.temp)))}catch(_){}}
 function renderTracks(){const b=$("trackList");if(!b)return;b.innerHTML=tracks.length?tracks.map((t,i)=>'<div class="trk"><b>'+(i===cur?"▶ ":"")+escapeHtml(t.name)+'</b><button type="button" class="secondary" data-track="'+i+'">Play</button><button type="button" class="danger" data-trackdel="'+i+'">✕</button></div>').join(""):'<p class="muted">No music added yet.</p>';}
 function playTrack(i){

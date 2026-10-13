@@ -425,6 +425,7 @@ body.light .toast{background:#172033;color:#fff}
     <select id="sacredSelect" aria-label="Choose sacred text"></select>
     <p id="sacredStatus" class="muted"></p>
     <div class="grid2" style="margin-bottom:10px"><button type="button" class="secondary" data-action="speak">🔊 Read aloud</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
+    <div style="margin-bottom:10px"><select class="voiceModeSel" aria-label="Voice style"><option value="">Standard voice</option><option value="jewish">Jewish voice — English + Hebrew</option><option value="muslim">Muslim voice — English + Arabic</option></select></div>
     <div class="grid2"><button type="button" class="primary" data-action="sacredUpload">📥 Upload text</button><button type="button" class="secondary" data-action="sacredOnline">🌐 Load online</button></div>
     <input id="sacredFile" type="file" hidden>
     <div style="display:flex;gap:8px;margin-top:10px"><input id="sacredLink" placeholder="Or paste a link to a .txt or .json file" style="flex:1;min-width:0"><button type="button" class="secondary" data-action="sacredLink">Load</button></div>
@@ -439,6 +440,7 @@ body.light .toast{background:#172033;color:#fff}
   <p class="muted" style="margin:0">Open a Bible chapter, devotional, study or sacred text, then tap Read. Uses your device's voices.</p>
   <div class="bar"><button type="button" class="primary" data-action="speak">🔊 Read this page</button><button type="button" class="secondary" data-action="speakPause">⏸ Pause / resume</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
   <div class="bar"><select id="speechRate" aria-label="Speed"><option value=".8">Slower</option><option value="1" selected>Normal</option><option value="1.2">Faster</option><option value="1.4">Fastest</option></select><select id="voiceSel" aria-label="Voice"></select></div>
+  <div class="bar"><select class="voiceModeSel" aria-label="Voice style"><option value="">Standard voice</option><option value="jewish">Jewish voice — English + Hebrew</option><option value="muslim">Muslim voice — English + Arabic</option></select></div><p class="muted voiceModeNote" style="margin:0 0 6px;font-size:.85rem"></p>
   <label><input id="autoNext" type="checkbox" style="width:auto;margin-right:8px">Keep reading into the next Bible chapter</label>
   <h3>Gospel music</h3>
   <p class="muted" style="margin:0">Add music you have the right to play: upload audio files, paste a YouTube or Spotify playlist/song link, or paste a direct audio link.</p>
@@ -1803,7 +1805,7 @@ omerRender();parshaRender();wallLoad();setInterval(omerRender,60000);
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");
-function fillVoices(){const sel=$("voiceSel");if(!sel||!canSpeak())return;const v=speechSynthesis.getVoices();sel.innerHTML='<option value="">Automatic voice</option>'+v.map(x=>'<option value="'+escapeAttr(x.name)+'">'+escapeHtml(x.name+" ("+x.lang+")")+'</option>').join("");}
+function fillVoices(){const sel=$("voiceSel");if(!sel||!canSpeak())return;const v=speechSynthesis.getVoices();setTimeout(()=>{try{vmSync()}catch(_){}},0);sel.innerHTML='<option value="">Automatic voice</option>'+v.map(x=>'<option value="'+escapeAttr(x.name)+'">'+escapeHtml(x.name+" ("+x.lang+")")+'</option>').join("");}
 function rowsOf(card){return [...card.querySelectorAll(".verseRow")].map(el=>{const c=el.cloneNode(true);c.querySelectorAll(".verseNum,button").forEach(x=>x.remove());return{el,text:c.textContent.trim()}}).filter(x=>x.text);}
 function speakCurrent(){
   if(!canSpeak()){toast("Read aloud is not supported in this browser");return}
@@ -1819,20 +1821,70 @@ function speakCurrent(){
   spWatch=setTimeout(()=>{if(!spStarted)toast("No sound? Turn off silent mode, raise the volume, or pick another voice.")},3500);
   spNext();
 }
+/* ---- Jewish (English+Hebrew) and Muslim (English+Arabic) reading voices ---- */
+const VM_KEY="bpm_voicemode",voiceMode=()=>localStorage.getItem(VM_KEY)||"";
+let spWarned={},spLastEl=null;
+const scriptOf=w=>/[\u0590-\u05FF\uFB1D-\uFB4F]/.test(w)?"he":/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(w)?"ar":/[A-Za-z\u00C0-\u024F]/.test(w)?"en":"";
+function splitRuns(text){
+  const out=[];let last="en";
+  String(text).split(/(\s+)/).forEach(tok=>{
+    if(!tok)return;
+    const s=/^\s+$/.test(tok)?"":scriptOf(tok),t=s||last;
+    if(out.length&&out[out.length-1].lang===t)out[out.length-1].text+=tok;else out.push({lang:t,text:tok});
+    if(s)last=s;
+  });
+  return out.filter(r=>r.text.trim());
+}
+function pickVoice(lang){
+  const vs=speechSynthesis.getVoices(),n=v=>v.lang.toLowerCase().replace("_","-");
+  if(lang==="en"){const sel=vs.find(x=>x.name===$("voiceSel").value&&n(x).startsWith("en"));if(sel)return sel}
+  const pref=lang==="he"?["he-il"]:lang==="ar"?["ar-sa","ar-eg","ar-ae"]:(voiceMode()==="jewish"?["en-il","en-us","en-gb"]:["en-us","en-gb"]);
+  for(const p of pref){const v=vs.find(x=>n(x)===p);if(v)return v}
+  return vs.find(x=>n(x).startsWith(lang))||null;
+}
+function vmSync(){
+  const m=voiceMode();
+  document.querySelectorAll(".voiceModeSel").forEach(x=>x.value=m);
+  const note=document.querySelectorAll(".voiceModeNote");if(!note.length)return;
+  let t="";
+  if(m&&canSpeak()){
+    const he=pickVoice("he"),ar=pickVoice("ar"),en=pickVoice("en"),nm=v=>v?"✓ "+v.name:"✗ not installed";
+    t=(m==="jewish"?"Reads English and Hebrew (Arabic too if present). ":"Reads English and Arabic (Hebrew too if present). ")+"English: "+nm(en)+" · "+(m==="jewish"?"Hebrew: "+nm(he):"Arabic: "+nm(ar));
+    if((m==="jewish"&&!he)||(m==="muslim"&&!ar))t+=". Add a "+(m==="jewish"?"Hebrew":"Arabic")+" voice in your device's text-to-speech settings.";
+  }
+  note.forEach(x=>x.textContent=t);
+}
+document.addEventListener("change",e=>{if(e.target.classList?.contains("voiceModeSel")){try{localStorage.setItem(VM_KEY,e.target.value)}catch(_){}vmSync();toast(e.target.value==="jewish"?"Jewish voice: English + Hebrew":e.target.value==="muslim"?"Muslim voice: English + Arabic":"Standard voice")}});
 function spNext(){
   document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));
   if(!spOn)return;
-  if(spI>=spQ.length){spOn=false;if($("autoNext").checked&&onScr("bible")){chapterMove(1);setTimeout(speakCurrent,700);}return}
-  const it=spQ[spI],u=new SpeechSynthesisUtterance(it.text);u.rate=Number($("speechRate").value)||1;
-  let v=speechSynthesis.getVoices().find(x=>x.name===$("voiceSel").value);
-  if(it.lang)v=speechSynthesis.getVoices().find(x=>x.lang.toLowerCase().startsWith(it.lang))||null;
-  if(v){u.voice=v;u.lang=v.lang}else{const l=TRANS_LIST[TRANS]?.lang;if(l&&!/^en/i.test(l))u.lang=l}
+  if(spI>=spQ.length){spOn=false;spWarned={};if($("autoNext").checked&&onScr("bible")){chapterMove(1);setTimeout(speakCurrent,700);}return}
+  const it=spQ[spI];
+  if(voiceMode()&&!it.segd&&!it.lang){
+    const runs=splitRuns(it.text);
+    if(runs.some(r=>r.lang!=="en")){spQ.splice(spI,1,...runs.map(r=>({el:it.el,text:r.text,lang:r.lang,segd:1})));return spNext()}
+    it.segd=1;it.lang="en";
+  }
+  const u=new SpeechSynthesisUtterance(it.text);u.rate=Number($("speechRate").value)||1;
+  let v;
+  if(it.segd){
+    v=pickVoice(it.lang||"en");
+    if(!v&&it.lang!=="en"){
+      if(!spWarned[it.lang]){spWarned[it.lang]=1;toast("No "+(it.lang==="he"?"Hebrew":"Arabic")+" voice on this device — skipping that text. Install one in your device's speech settings.")}
+      spI++;return spNext();
+    }
+    if(v){u.voice=v;u.lang=v.lang}else u.lang="en-US";
+  }else{
+    v=speechSynthesis.getVoices().find(x=>x.name===$("voiceSel").value);
+    if(it.lang)v=speechSynthesis.getVoices().find(x=>x.lang.toLowerCase().startsWith(it.lang))||null;
+    if(v){u.voice=v;u.lang=v.lang}else{const l=TRANS_LIST[TRANS]?.lang;if(l&&!/^en/i.test(l))u.lang=l}
+  }
   u.onstart=()=>{spStarted=true};(window.__utts=window.__utts||[]).push(u);if(window.__utts.length>40)window.__utts.shift();
   u.onend=()=>{spI++;spNext()};u.onerror=()=>{spI++;spNext()};
-  if(it.el){it.el.classList.add("speaking");it.el.scrollIntoView({behavior:"smooth",block:"center"})}
+  if(it.el){it.el.classList.add("speaking");if(it.el!==spLastEl)it.el.scrollIntoView({behavior:"smooth",block:"center"});spLastEl=it.el}
   speechSynthesis.speak(u);
 }
-function speakStop(){spOn=false;if(canSpeak())speechSynthesis.cancel();document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));}
+function speakStop(){spOn=false;spWarned={};spLastEl=null;if(canSpeak())speechSynthesis.cancel();document.querySelectorAll(".speaking").forEach(x=>x.classList.remove("speaking"));}
 function saveTracks(){try{localStorage.setItem("bpm_music",JSON.stringify(tracks.filter(t=>!t.temp)))}catch(_){}}
 function renderTracks(){const b=$("trackList");if(!b)return;b.innerHTML=tracks.length?tracks.map((t,i)=>'<div class="trk"><b>'+(i===cur?"▶ ":"")+escapeHtml(t.name)+'</b><button type="button" class="secondary" data-track="'+i+'">Play</button><button type="button" class="danger" data-trackdel="'+i+'">✕</button></div>').join(""):'<p class="muted">No music added yet.</p>';}
 function playTrack(i){
@@ -1857,6 +1909,7 @@ const FEATURED_YT="https://www.youtube.com/embed/Aw4Aghpvwjo?playsinline=1";
 if(!tracks.some(t=>(t.url||"").includes("Aw4Aghpvwjo")))tracks.unshift({name:"Featured song (YouTube)",url:FEATURED_YT,kind:"embed"});
 saveTracks();renderTracks();
 if(canSpeak()){fillVoices();speechSynthesis.onvoiceschanged=fillVoices;}
+vmSync();
 renderTracks();
 const HYMNS={"title": "Public-domain hymns", "chapters": [{"chapter": 1, "title": "Amazing Grace", "verses": [{"verse": 1, "text": "Amazing grace! how sweet the sound,\nThat saved a wretch like me!\nI once was lost, but now am found;\nWas blind, but now I see."}, {"verse": 2, "text": "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;\nHow precious did that grace appear\nThe hour I first believed."}, {"verse": 3, "text": "Through many dangers, toils and snares,\nI have already come;\n'Tis grace hath brought me safe thus far,\nAnd grace will lead me home."}]}, {"chapter": 2, "title": "What a Friend We Have in Jesus", "verses": [{"verse": 1, "text": "What a friend we have in Jesus,\nAll our sins and griefs to bear!\nWhat a privilege to carry\nEverything to God in prayer!"}, {"verse": 2, "text": "Have we trials and temptations?\nIs there trouble anywhere?\nWe should never be discouraged—\nTake it to the Lord in prayer."}]}, {"chapter": 3, "title": "Blessed Assurance", "verses": [{"verse": 1, "text": "Blessed assurance, Jesus is mine!\nO what a foretaste of glory divine!\nHeir of salvation, purchase of God,\nBorn of His Spirit, washed in His blood."}]}, {"chapter": 4, "title": "It Is Well with My Soul", "verses": [{"verse": 1, "text": "When peace, like a river, attendeth my way,\nWhen sorrows like sea billows roll;\nWhatever my lot, Thou hast taught me to say,\nIt is well, it is well with my soul."}]}, {"chapter": 5, "title": "Just As I Am", "verses": [{"verse": 1, "text": "Just as I am, without one plea,\nBut that Thy blood was shed for me,\nAnd that Thou bidd'st me come to Thee,\nO Lamb of God, I come, I come."}]}, {"chapter": 6, "title": "Rock of Ages", "verses": [{"verse": 1, "text": "Rock of Ages, cleft for me,\nLet me hide myself in Thee;\nLet the water and the blood,\nFrom Thy wounded side which flowed,\nBe of sin the double cure;\nSave from wrath and make me pure."}]}, {"chapter": 7, "title": "Swing Low, Sweet Chariot", "verses": [{"verse": 1, "text": "Swing low, sweet chariot,\nComing for to carry me home;\nSwing low, sweet chariot,\nComing for to carry me home."}, {"verse": 2, "text": "I looked over Jordan, and what did I see,\nComing for to carry me home?\nA band of angels coming after me,\nComing for to carry me home."}]}]};
 const SACRED=[{id:"hymns",name:"Public-domain hymns (lyrics)"},

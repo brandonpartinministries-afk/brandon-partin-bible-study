@@ -64,7 +64,7 @@ body{transition:background .2s,color .2s}.card,.tile{box-shadow:var(--shadow)}
 body.light{--bg:#f4f7fb;--panel:#fff;--panel2:#edf3fa;--text:#172033;--muted:#536078;--line:#d6deea;--blue:#1264c8;--silver:#24364d;--good:#167044;background:var(--bg);color:var(--text)}
 body.light{background:var(--bg)}
 .verseRow[data-hl]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;transition:background .15s}
-.verseRow.hl{background:rgba(245,197,66,.24);box-shadow:inset 3px 0 0 #f5c542;border-radius:8px;padding-left:10px;padding-right:10px}
+.verseRow.hl{background:color-mix(in srgb,var(--hlc,#f5c542) 28%,transparent);box-shadow:inset 3px 0 0 var(--hlc,#f5c542);border-radius:8px;padding-left:10px;padding-right:10px}
 .verse.hl{background:rgba(245,197,66,.24);box-shadow:inset 3px 0 0 #f5c542;border-radius:8px;padding:8px 12px}
 body.light .verseRow.hl,body.light .verse.hl{background:rgba(245,197,66,.45)}
 .hlHint{margin:4px 0 10px}
@@ -114,6 +114,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="sacred">Sacred Texts</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
+    <button type="button" data-screen="progress">🏆 Awards</button>
     <button type="button" data-screen="admin" id="adminNav">🔐 Admin</button>
   </nav>
 </div>
@@ -200,6 +201,16 @@ body.light .toast{background:#172033;color:#fff}
   <div class="card"><span class="pill">🖍 Highlights</span><h2>Highlighted verses</h2><div id="favorites"></div></div>
 </section>
 
+<section id="progress" class="screen">
+  <div class="card"><span class="pill">🏆 Awards</span><h1>Your Awards</h1><div id="awardGrid" class="grid2"></div></div>
+  <div class="card"><span class="pill">📅 Plan</span><h2>Read the Bible in a year</h2><div id="planBox"></div></div>
+  <div class="card"><span class="pill">⚙️ Tools</span><h2>Backup &amp; reading</h2><p class="muted">Highlights, notes, awards and progress are saved on this device. Export a backup to keep them safe or move them to another device.</p>
+    <div class="bibleTools"><button type="button" class="primary" data-aw="export">⬇️ Export backup</button><button type="button" class="secondary" data-aw="import">⬆️ Import backup</button><button type="button" class="secondary" data-aw="sepia">📜 Sepia theme</button></div><input id="awImport" type="file" accept=".json" hidden></div>
+  <div class="card"><span class="pill">☁️ Sync</span><h2>Sync across devices</h2><p id="syStatus" class="muted">Sign in to keep highlights, notes, awards and plan progress on all your devices.</p>
+    <div id="syForm" class="stack"><input id="syEmail" type="email" autocomplete="email" placeholder="Email"><input id="syPass" type="password" autocomplete="current-password" placeholder="Password (6+ characters)"><div class="bibleTools"><button type="button" class="primary" data-sy="in">Sign in</button><button type="button" class="secondary" data-sy="up">Create account</button></div></div>
+    <div id="syOn" class="bibleTools" hidden><button type="button" class="primary" data-sy="now">Sync now</button><button type="button" class="danger" data-sy="out">Sign out</button></div></div>
+</section>
+
 <section id="admin" class="screen">
   <div class="card"><span class="pill">🔐 Administration</span><h1>Content Administration</h1><p id="adminStatus" class="muted">Sign in with an administrator account to manage published content.</p>
     <div id="adminLogin" class="stack">
@@ -216,6 +227,7 @@ body.light .toast{background:#172033;color:#fff}
         <input id="srmTitle" placeholder="Sermon title"><input id="srmSpeaker" placeholder="Speaker (optional)"><input id="srmDate" type="date"><textarea id="srmDesc" rows="3" placeholder="Short description (optional)"></textarea>
         <input id="srmLink" placeholder="YouTube link"><label class="muted">Or upload a file</label><input id="srmFile" type="file" accept="audio/*,video/*">
         <button type="button" class="primary" data-action="sermonPublish">Publish sermon</button></div></div>
+      <div class="card"><h2>🏆 Custom awards</h2><p class="muted">Create awards members can earn. They publish to everyone when connected to Supabase.</p><div class="stack"><input id="awTitle" placeholder="Award title"><input id="awIcon" placeholder="Icon (emoji)" maxlength="4"><input id="awDesc" placeholder="Description"><select id="awMetric"><option value="highlights">Highlighted verses</option><option value="notes">Verse notes</option><option value="chapters">Chapters read</option><option value="devotionals">Devotionals done</option><option value="lessons">Studies done</option><option value="plandays">Plan days done</option><option value="streak">Plan streak (days)</option></select><input id="awTarget" type="number" min="1" placeholder="Target number"><button type="button" class="primary" data-aw="add">Add award</button></div><div id="awAdminList"></div></div>
       <div class="card"><h2>🙏 Prayer Wall review</h2><p class="muted">New requests wait here until you approve them.</p><div id="wallPending"></div></div>
       <div class="card"><h2>🧭 Arrange tabs</h2><p class="muted">Move tabs up or down and choose which ones show. After you save, the new order applies for everyone, once the setup file has been run in Supabase. Home and Admin always stay visible.</p>
         <div id="tabEditor"></div><button type="button" class="primary" data-action="tabSave">Save arrangement</button> <button type="button" class="secondary" data-action="tabReset">Reset to default</button></div>
@@ -518,7 +530,7 @@ function openChapter(){
   localStorage.setItem("bpm_continue",JSON.stringify({book,chapter})); updateContinue();
   const card=$("chapterCard"); card.hidden=false;
   card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow" data-hl="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'" data-hltext="'+encodeURIComponent(v.text)+'"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+'</div>').join("");
-  card.querySelector("h2").insertAdjacentHTML("afterend",'<p class="muted hlHint">Press and hold a verse to highlight it. Press and hold again to remove.</p>');
+  card.querySelector("h2").insertAdjacentHTML("afterend",'<p class="muted hlHint">Press and hold a verse to highlight it. Press and hold again to remove.</p><div class="bibleTools" id="hlTools">'+["#f5c542","#6fd08c","#69a9ff","#ff8fab"].map(c=>'<button type="button" class="secondary" data-hlc="'+c+'" style="border-color:'+c+'">●</button>').join("")+'<button type="button" class="secondary" data-copych="1">📋 Copy chapter</button></div>');
   refreshHl();
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -698,16 +710,16 @@ function search(){
   const q=$("search").value.trim().toLowerCase(), box=$("searchResults");
   if(!q){box.innerHTML="";return}
   const source=bibleVerses.length?bibleVerses:verses;
-  const hits=source.filter(v=>(v.ref+" "+v.text).toLowerCase().includes(q)).slice(0,80);
-  box.innerHTML=hits.length?'<p class="muted">Showing up to 80 matches.</p>'+hits.map(v=>'<div class="result"><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p><button type="button" class="secondary" data-ref="'+escapeAttr(v.ref)+'">Open</button></div>').join(""):"<p class='muted'>No match found.</p>";
+  const hits=source.filter(v=>(v.ref+" "+v.text).toLowerCase().includes(q)&&(!window.__scope||window.__scope(v.ref))).slice(0,80);
+  box.innerHTML=hits.length?'<p class="muted">Showing up to 80 matches.</p>'+hits.map(v=>'<div class="result"><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+(window.__mark?window.__mark(v.text,q):escapeHtml(v.text))+'</p><button type="button" class="secondary" data-ref="'+escapeAttr(v.ref)+'">Open</button></div>').join(""):"<p class='muted'>No match found.</p>";
 }
 function save(key,field,status){localStorage.setItem("bpm_"+key,$(field).value);$(status).textContent="Saved.";toast("Saved")}
 function favorites(){return JSON.parse(localStorage.getItem("bpm_favorites")||"[]")}
-function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No highlighted verses yet. Open a chapter and tap a verse to highlight it.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p></div><button type="button" class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
+function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No highlighted verses yet. Open a chapter and tap a verse to highlight it.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p>'+(v.note?'<p>📝 '+escapeHtml(v.note)+'</p>':'')+'</div><div class="stack"><button type="button" class="secondary" data-fnote="'+i+'">📝</button><button type="button" class="secondary" data-fcopy="'+i+'">📋</button><button type="button" class="danger" data-remove="'+i+'">Remove</button></div></div>').join("")}
 function refreshHl(){
-  const set=new Set(favorites().map(x=>x.ref));
+  const set=new Map(favorites().map(x=>[x.ref,x.color||"#f5c542"]));
   document.querySelectorAll("[data-hl]").forEach(el=>{
-    const on=set.has(decodeURIComponent(el.dataset.hl));
+    const rf=decodeURIComponent(el.dataset.hl),on=set.has(rf);if(on)el.style.setProperty("--hlc",set.get(rf));
     if(el.classList.contains("hlbtn")){el.textContent=on?"✅ Highlighted (tap to remove)":"🖍 Highlight";const vv=el.closest(".card")?.querySelector(".verse");if(vv)vv.classList.toggle("hl",on)}
     else el.classList.toggle("hl",on);
   });
@@ -715,7 +727,7 @@ function refreshHl(){
 function toggleHl(ref,text){
   const a=favorites(),i=a.findIndex(x=>x.ref===ref);
   if(i>=0){a.splice(i,1);toast("Highlight removed")}
-  else{const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref)||{ref,text:text||""};a.push(v);toast("Verse highlighted")}
+  else{const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref)||{ref,text:text||""};a.push(Object.assign({},v,{color:localStorage.getItem("bpm_hlcolor")||"#f5c542"}));toast("Verse highlighted")}
   localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();refreshHl();
 }
 function addFavorite(ref){toggleHl(ref)}
@@ -2057,6 +2069,87 @@ if(localStorage.getItem("bpm_font"))document.documentElement.style.setProperty("
 updateContinue();
 if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});navigator.serviceWorker.register("sw.js?v=12").then(r=>r.update&&r.update()).catch(()=>{});}
 
+})();
+</script>
+<script>
+(function(){
+const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(_){return d}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
+const BI=[["h1","🖍","First Highlight","Highlight a verse","highlights",1],["h25","🌟","Verse Collector","Highlight 25 verses","highlights",25],["n5","📝","Note Taker","Add 5 verse notes","notes",5],["c10","📖","Chapter Reader","Read 10 chapters","chapters",10],["c100","🏅","Century Reader","Read 100 chapters","chapters",100],["d7","🌅","Devotion Habit","Finish 7 devotionals","devotionals",7],["d30","🔥","Devoted","Finish 30 devotionals","devotionals",30],["l5","🎓","Student","Finish 5 studies","lessons",5],["p7","📅","Plan Starter","Complete 7 plan days","plandays",7],["s7","⚡","Week Streak","7-day plan streak","streak",7],["s30","👑","Month Streak","30-day plan streak","streak",30]].map(a=>({id:a[0],icon:a[1],title:a[2],desc:a[3],metric:a[4],target:a[5]}));
+let CA=LS("bpm_custom_awards",[]);
+const day=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()),fk=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const plan=()=>LS("bpm_plan",{start:"",days:{}});
+const dayNo=()=>{const p=plan();if(!p.start)return 0;return Math.max(1,Math.min(365,Math.round((day(new Date())-day(new Date(p.start+"T12:00:00")))/864e5)+1))};
+function streak(){const p=plan();let n=dayNo(),c=0;if(!n)return 0;if(!p.days[n])n--;while(n>=1&&p.days[n]){c++;n--}return c}
+function metrics(){const f=favorites();return{highlights:f.length,notes:f.filter(x=>x.note).length,chapters:Object.keys(LS("bpm_chapters",{})).length,devotionals:Object.keys((typeof DONE!=="undefined"&&DONE.d)||{}).length,lessons:Object.keys((typeof DONE!=="undefined"&&DONE.s)||{}).length,plandays:Object.keys(plan().days).length,streak:streak()}}
+function awRender(){const m=metrics(),all=BI.concat(CA.map(a=>Object.assign({custom:1},a))),g=$("awardGrid");if(g)g.innerHTML=all.map(a=>{const v=m[a.metric]||0,ok=v>=a.target;return'<div class="tile" style="opacity:'+(ok?1:.5)+'"><div style="font-size:2rem">'+escapeHtml(a.icon||"🏆")+'</div><b>'+escapeHtml(a.title)+'</b><p class="muted">'+escapeHtml(a.desc||"")+'</p><span class="pill">'+(ok?"✅ Earned":Math.min(v,a.target)+" / "+a.target)+'</span></div>'}).join("");const l=$("awAdminList");if(l)l.innerHTML=CA.map((a,i)=>'<div class="favrow"><div><b>'+escapeHtml((a.icon||"🏆")+" "+a.title)+'</b><p class="muted">'+escapeHtml(a.metric+" ≥ "+a.target)+'</p></div><button type="button" class="danger" data-aw="del" data-i="'+i+'">Delete</button></div>').join("")}
+function awCheck(){const m=metrics(),e=LS("bpm_earned",{});let n=0;BI.concat(CA).forEach(a=>{if((m[a.metric]||0)>=a.target&&!e[a.id]){e[a.id]=1;if(Object.keys(e).length>1||localStorage.getItem("bpm_earned"))toast("🏆 Award earned: "+a.title);n++}});if(n||!localStorage.getItem("bpm_earned")){SV("bpm_earned",e);awRender()}}
+async function cloudSave(){try{if(supabaseClient&&isAdmin)await supabaseClient.from("site_settings").upsert([{key:"customAwards",value:JSON.stringify(CA)}],{onConflict:"key"})}catch(_){}}
+async function cloudLoad(){try{if(!supabaseClient)return;const {data}=await supabaseClient.from("site_settings").select("value").eq("key","customAwards").maybeSingle();if(data&&data.value){CA=JSON.parse(data.value);SV("bpm_custom_awards",CA);awRender()}}catch(_){}}
+function chList(){const L=[];Object.keys(bibleBookData||{}).forEach(b=>{const k=bibleBookData[b],n=Number(k?.["chapter-count"]||k?.chapters?.length||0);for(let i=1;i<=n;i++)L.push([b,i])});return L}
+function planRender(){const box=$("planBox");if(!box)return;const p=plan();if(!p.start){box.innerHTML='<p class="muted">Read about 3 chapters a day and finish the whole Bible in 365 days.</p><button type="button" class="primary" data-aw="pstart">Start plan today</button>';return}const n=dayNo(),L=chList(),a=Math.floor((n-1)*L.length/365),z=Math.max(a+1,Math.floor(n*L.length/365)),r=L.slice(a,z),t=r.length?r[0][0]+" "+r[0][1]+(r.length>1?" – "+r[r.length-1][0]+" "+r[r.length-1][1]:""):"Complete!";box.innerHTML='<p><b>Day '+n+' of 365</b> · 🔥 '+streak()+'-day streak</p><p>'+escapeHtml(t)+'</p><div class="bibleTools"><button type="button" class="secondary" data-aw="popen">Open reading</button><button type="button" class="primary" data-aw="pdone">'+(p.days[n]?"✅ Done today":"Mark today done")+'</button><button type="button" class="danger" data-aw="preset">Reset</button></div>'}
+function popen(){const L=chList(),n=dayNo(),c=L[Math.floor((n-1)*L.length/365)];if(!c)return;$("bookSelect").value=c[0];populateChapters();$("chapterSelect").value=String(c[1]);openChapter()}
+const _oc=openChapter;openChapter=function(){_oc();try{const b=$("bookSelect").value,c=$("chapterSelect").value,r=LS("bpm_chapters",{});if(!$("chapterCard").hidden){r[b+" "+c]=1;SV("bpm_chapters",r)}}catch(_){}};
+function sepia(on){document.body.classList.toggle("sepia",on);localStorage.setItem("bpm_sepia",on?"1":"")}
+const st=document.createElement("style");st.textContent="body.sepia{--bg:#f1e4c8;--panel:#f8eed7;--panel2:#efe0bd;--text:#3b2f1c;--muted:#6b5a3c;--line:#d4c39c;--blue:#8a5a14;--accent:#8a5a14;background:var(--bg);color:var(--text)}body.sepia .card,body.sepia .tile{background:var(--panel)}body.sepia .top{background:rgba(241,228,200,.95)}body.sepia .secondary,body.sepia .navlinks button{background:var(--panel2);color:var(--text)}body.sepia .verse{color:#3b2f1c}";document.head.appendChild(st);
+if(localStorage.getItem("bpm_sepia"))sepia(true);
+document.addEventListener("click",async e=>{const t=e.target,q=s=>t.closest&&t.closest(s);
+ let x;if(x=q("[data-hlc]")){localStorage.setItem("bpm_hlcolor",x.dataset.hlc);toast("Highlight color set");return}
+ if(q("[data-copych]")){const tx=[...document.querySelectorAll("#chapterCard .verseRow")].map(r=>r.dataset.hltext?decodeURIComponent(r.dataset.hltext):"").join(" ");try{await navigator.clipboard.writeText($("chapterCard").querySelector("h2").textContent+": "+tx);toast("Chapter copied")}catch(_){toast("Copy not supported")}return}
+ if(x=q("[data-fcopy]")){const v=favorites()[+x.dataset.fcopy];if(v)try{await navigator.clipboard.writeText(v.ref+" — "+v.text);toast("Verse copied")}catch(_){toast("Copy not supported")}return}
+ if(x=q("[data-fnote]")){const a=favorites(),i=+x.dataset.fnote;if(!a[i])return;const n=prompt("Note for "+a[i].ref,a[i].note||"");if(n===null)return;a[i].note=n.trim();localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();awCheck();return}
+ if(x=q("[data-aw]")){const k=x.dataset.aw,p=plan();
+  if(k=="add"){if(!isAdmin){toast("Sign in as an administrator first");return}const ti=$("awTitle").value.trim(),tg=Number($("awTarget").value);if(!ti||!(tg>0)){toast("Add a title and a target number");return}CA.push({id:"c"+Date.now(),icon:$("awIcon").value.trim()||"🏆",title:ti,desc:$("awDesc").value.trim(),metric:$("awMetric").value,target:tg});SV("bpm_custom_awards",CA);["awTitle","awIcon","awDesc","awTarget"].forEach(i=>$(i).value="");awRender();awCheck();await cloudSave();toast("Award added")}
+  else if(k=="del"){if(!isAdmin||!confirm("Delete this award?"))return;CA.splice(+x.dataset.i,1);SV("bpm_custom_awards",CA);awRender();await cloudSave()}
+  else if(k=="pstart"){p.start=fk(new Date());SV("bpm_plan",p);planRender();awCheck()}
+  else if(k=="popen")popen();
+  else if(k=="pdone"){const n=dayNo();if(p.days[n])delete p.days[n];else p.days[n]=1;SV("bpm_plan",p);planRender();awCheck()}
+  else if(k=="preset"){if(confirm("Reset your reading plan?")){SV("bpm_plan",{start:"",days:{}});planRender();awCheck()}}
+  else if(k=="export"){const o={};Object.keys(localStorage).filter(k=>k.indexOf("bpm_")==0).forEach(k=>o[k]=localStorage.getItem(k));const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));a.download="bpm-backup-"+fk(new Date())+".json";a.click();toast("Backup exported")}
+  else if(k=="import")$("awImport").click();
+  else if(k=="sepia")sepia(!document.body.classList.contains("sepia"));
+  return}
+});
+$("awImport").addEventListener("change",async e=>{try{const o=JSON.parse(await e.target.files[0].text());Object.keys(o).filter(k=>k.indexOf("bpm_")==0&&typeof o[k]=="string").forEach(k=>localStorage.setItem(k,o[k]));CA=LS("bpm_custom_awards",[]);renderFavorites();refreshHl();planRender();awRender();toast("Backup restored")}catch(_){toast("That file isn't a valid backup")}e.target.value=""});
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-screen=progress]")){awCheck();planRender();awRender()}});
+awRender();planRender();setInterval(awCheck,4000);setTimeout(cloudLoad,2500);setTimeout(awCheck,800);
+})();
+</script>
+<script>
+(function(){
+const OT="Genesis,Exodus,Leviticus,Numbers,Deuteronomy,Joshua,Judges,Ruth,1 Samuel,2 Samuel,1 Kings,2 Kings,1 Chronicles,2 Chronicles,Ezra,Nehemiah,Esther,Job,Psalms,Proverbs,Ecclesiastes,Song of Solomon,Isaiah,Jeremiah,Lamentations,Ezekiel,Daniel,Hosea,Joel,Amos,Obadiah,Jonah,Micah,Nahum,Habakkuk,Zephaniah,Haggai,Zechariah,Malachi".split(","),NT="Matthew,Mark,Luke,John,Acts,Romans,1 Corinthians,2 Corinthians,Galatians,Ephesians,Philippians,Colossians,1 Thessalonians,2 Thessalonians,1 Timothy,2 Timothy,Titus,Philemon,Hebrews,James,1 Peter,2 Peter,1 John,2 John,3 John,Jude,Revelation".split(",");
+const bookOf=r=>r.replace(/\s+\d+:\d+$/,"");
+window.__scope=r=>{const v=$("searchScope")?$("searchScope").value:"";if(!v)return true;const b=bookOf(r);if(v=="OT")return OT.includes(b);if(v=="NT")return NT.includes(b);if(v=="AP")return !OT.includes(b)&&!NT.includes(b);return b===v};
+window.__mark=(t,q)=>{t=String(t);const l=t.toLowerCase();let o="",i=0,j;while(q&&(j=l.indexOf(q,i))>=0){o+=escapeHtml(t.slice(i,j))+"<mark>"+escapeHtml(t.slice(j,j+q.length))+"</mark>";i=j+q.length}return o+escapeHtml(t.slice(i))};
+const row=document.querySelector("#search")?.closest(".searchRow");
+if(row){const sel=document.createElement("select");sel.id="searchScope";sel.style.marginTop="8px";sel.innerHTML='<option value="">All of the Bible</option><option value="OT">Old Testament</option><option value="NT">New Testament</option><option value="AP">Other books</option>';row.insertAdjacentElement("afterend",sel);sel.addEventListener("change",()=>search());
+ const fill=()=>{if(sel.dataset.f||!Object.keys(bibleBookData).length)return;sel.dataset.f=1;sel.insertAdjacentHTML("beforeend",'<optgroup label="Single book">'+Object.keys(bibleBookData).map(b=>'<option>'+escapeHtml(b)+'</option>').join("")+'</optgroup>')};setInterval(fill,1500)}
+const st=document.createElement("style");st.textContent="mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}";document.head.appendChild(st);
+/* ---- account sync ---- */
+const sb=()=>typeof supabaseClient!=="undefined"?supabaseClient:null,J=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(_){return d}};
+const keys=()=>Object.keys(localStorage).filter(k=>k.indexOf("bpm_")==0&&!/^bpm_(sync|sepia)/.test(k)&&(localStorage.getItem(k)||"").length<150000);
+const snap=()=>{const o={};keys().forEach(k=>o[k]=localStorage.getItem(k));return o};
+const stat=m=>{const e=$("syStatus");if(e)e.textContent=m};
+let lastH="",user=null;
+async function me(){const c=sb();if(!c)return null;try{const {data}=await c.auth.getUser();user=data&&data.user||null}catch(_){user=null}$("syForm").hidden=!!user;$("syOn").hidden=!user;if(user)stat("Signed in as "+user.email+". Changes sync automatically.");return user}
+async function push(){const c=sb();if(!c||!user)return;const d=snap();try{const {error}=await c.from("user_data").upsert({user_id:user.id,data:d,updated_at:new Date().toISOString()});if(error)throw error;lastH=JSON.stringify(d);localStorage.setItem("bpm_sync_at",new Date().toISOString())}catch(e){stat("Sync problem: "+(e.message||e))}}
+async function pull(){const c=sb();if(!c||!user)return;try{const {data:row,error}=await c.from("user_data").select("data,updated_at").eq("user_id",user.id).maybeSingle();if(error)throw error;if(row&&row.data){const r=row.data,newer=!localStorage.getItem("bpm_sync_at")||row.updated_at>localStorage.getItem("bpm_sync_at");
+ Object.keys(r).filter(k=>k.indexOf("bpm_")==0).forEach(k=>{try{
+  if(k=="bpm_favorites"){const L=J(k,[]),R=JSON.parse(r[k]||"[]"),m=new Map(R.map(x=>[x.ref,x]));L.forEach(x=>m.set(x.ref,Object.assign({},m.get(x.ref),x)));localStorage.setItem(k,JSON.stringify([...m.values()]))}
+  else if(k=="bpm_chapters"||k=="bpm_earned")localStorage.setItem(k,JSON.stringify(Object.assign({},JSON.parse(r[k]),J(k,{}))));
+  else if(k=="bpm_plan"){const a=J(k,{start:"",days:{}}),b=JSON.parse(r[k]);localStorage.setItem(k,JSON.stringify({start:[a.start,b.start].filter(Boolean).sort()[0]||"",days:Object.assign({},b.days,a.days)}))}
+  else if(k=="bpm_done"){const a=J(k,{s:{},d:{}}),b=JSON.parse(r[k]);localStorage.setItem(k,JSON.stringify({s:Object.assign({},b.s,a.s),d:Object.assign({},b.d,a.d)}))}
+  else if(newer||localStorage.getItem(k)===null)localStorage.setItem(k,r[k]);
+ }catch(_){}});
+ try{if(typeof DONE!=="undefined"){const d=J("bpm_done",{s:{},d:{}});DONE.s=d.s||{};DONE.d=d.d||{}}}catch(_){}
+ renderFavorites();refreshHl();if(typeof loadSettings!=="function"){}document.querySelector("[data-aw]")&&document.querySelector("[data-screen=progress]").click()}
+ await push();stat("Synced just now. Changes sync automatically.")}catch(e){stat("Sync problem: "+(e.message||e)+" (run supabase-sync.sql once in Supabase)")}}
+document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.closest("[data-sy]");if(!b)return;const k=b.dataset.sy,c=sb();if(!c){stat("Cloud sync isn't connected.");return}
+ const em=$("syEmail").value.trim(),pw=$("syPass").value;
+ if(k=="in"||k=="up"){if(!em||pw.length<6){stat("Enter your email and a password of 6+ characters.");return}stat("Working…");try{const f=k=="in"?c.auth.signInWithPassword({email:em,password:pw}):c.auth.signUp({email:em,password:pw});const {data,error}=await f;if(error)throw error;if(k=="up"&&!data.session){stat("Check your email to confirm the account, then sign in.");return}await me();await pull()}catch(x){stat(x.message||String(x))}}
+ else if(k=="now"){stat("Syncing…");await pull()}
+ else if(k=="out"){await c.auth.signOut();user=null;await me();stat("Signed out. Your data stays on this device.")}});
+setTimeout(async()=>{if(await me())pull()},3000);
+setInterval(()=>{if(user&&JSON.stringify(snap())!==lastH)push()},20000);
 })();
 </script>
 </body>

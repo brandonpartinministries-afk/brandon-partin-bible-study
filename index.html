@@ -63,6 +63,11 @@ body{transition:background .2s,color .2s}.card,.tile{box-shadow:var(--shadow)}
 .settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.verseRow{line-height:1.8;padding:12px 0;border-bottom:1px solid var(--line);font-size:var(--verse-size,1.08rem)}.verseNum{display:inline-flex;min-width:30px;color:var(--accent);font-weight:800}.result{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}.tile{transition:transform .15s, border-color .15s}.tile:active{transform:scale(.98)}
 body.light{--bg:#f4f7fb;--panel:#fff;--panel2:#edf3fa;--text:#172033;--muted:#536078;--line:#d6deea;--blue:#1264c8;--silver:#24364d;--good:#167044;background:var(--bg);color:var(--text)}
 body.light{background:var(--bg)}
+.verseRow[data-hl]{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+.verseRow.hl{background:rgba(245,197,66,.24);box-shadow:inset 3px 0 0 #f5c542;border-radius:8px;padding-left:10px;padding-right:10px}
+.verse.hl{background:rgba(245,197,66,.24);box-shadow:inset 3px 0 0 #f5c542;border-radius:8px;padding:8px 12px}
+body.light .verseRow.hl,body.light .verse.hl{background:rgba(245,197,66,.45)}
+.hlHint{margin:4px 0 10px}
 body.light .top{background:rgba(244,247,251,.94)}
 body.light .navlinks button,body.light .iconbtn{background:#fff;color:var(--text)}
 body.light .navlinks button.active,body.light .primary{background:linear-gradient(135deg,#3d78bd,#1d4e88);color:#fff}
@@ -192,7 +197,7 @@ body.light .toast{background:#172033;color:#fff}
     <textarea id="notes" placeholder="Write notes from your study..."></textarea><br><br>
     <button type="button" class="primary" data-action="saveNotes">Save notes</button> <span id="notesStatus" class="muted"></span>
   </div>
-  <div class="card"><span class="pill">❤️ Favorites</span><h2>Bookmarked verses</h2><div id="favorites"></div></div>
+  <div class="card"><span class="pill">🖍 Highlights</span><h2>Highlighted verses</h2><div id="favorites"></div></div>
 </section>
 
 <section id="admin" class="screen">
@@ -512,7 +517,9 @@ function openChapter(){
   if(!c){toast("That chapter is not available");return}
   localStorage.setItem("bpm_continue",JSON.stringify({book,chapter})); updateContinue();
   const card=$("chapterCard"); card.hidden=false;
-  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+' <button type="button" class="secondary" data-bookmark="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'">Bookmark</button></div>').join("");
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow" data-hl="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'" data-hltext="'+encodeURIComponent(v.text)+'"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+'</div>').join("");
+  card.querySelector("h2").insertAdjacentHTML("afterend",'<p class="muted hlHint">Tap a verse to highlight it. Tap again to remove.</p>');
+  refreshHl();
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function escapeHtml(x){return String(x).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
@@ -683,7 +690,8 @@ function renderDevotionals(){const box=$("devotionalGrid");if(!box)return;const 
 function openVerse(ref){
   const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref); if(!v)return;
   const card=$("verseCard"); card.hidden=false;
-  card.innerHTML='<span class="pill">📖 '+escapeHtml(v.ref)+'</span><div class="verse" style="margin-top:14px">'+escapeHtml(v.text)+'</div><br><button type="button" class="primary" data-bookmark="'+encodeURIComponent(v.ref)+'">❤️ Bookmark</button> <button type="button" class="secondary" data-vpic="'+encodeURIComponent(v.ref)+'">🖼 Share as picture</button>';
+  card.innerHTML='<span class="pill">📖 '+escapeHtml(v.ref)+'</span><div class="verse" style="margin-top:14px">'+escapeHtml(v.text)+'</div><br><button type="button" class="primary hlbtn" data-hl="'+encodeURIComponent(v.ref)+'" data-hltext="'+encodeURIComponent(v.text)+'">🖍 Highlight</button> <button type="button" class="secondary" data-vpic="'+encodeURIComponent(v.ref)+'">🖼 Share as picture</button>';
+  refreshHl();
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"center"});
 }
 function search(){
@@ -695,9 +703,23 @@ function search(){
 }
 function save(key,field,status){localStorage.setItem("bpm_"+key,$(field).value);$(status).textContent="Saved.";toast("Saved")}
 function favorites(){return JSON.parse(localStorage.getItem("bpm_favorites")||"[]")}
-function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No bookmarked verses yet.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p></div><button type="button" class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
-function addFavorite(ref){const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref);if(!v)return;const a=favorites();if(!a.some(x=>x.ref===ref)){a.push(v);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Verse bookmarked")}else toast("Already bookmarked")}
-function removeFavorite(i){const a=favorites();a.splice(i,1);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();toast("Removed")}
+function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No highlighted verses yet. Open a chapter and tap a verse to highlight it.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p></div><button type="button" class="danger" data-remove="'+i+'">Remove</button></div>').join("")}
+function refreshHl(){
+  const set=new Set(favorites().map(x=>x.ref));
+  document.querySelectorAll("[data-hl]").forEach(el=>{
+    const on=set.has(decodeURIComponent(el.dataset.hl));
+    if(el.classList.contains("hlbtn")){el.textContent=on?"✅ Highlighted (tap to remove)":"🖍 Highlight";const vv=el.closest(".card")?.querySelector(".verse");if(vv)vv.classList.toggle("hl",on)}
+    else el.classList.toggle("hl",on);
+  });
+}
+function toggleHl(ref,text){
+  const a=favorites(),i=a.findIndex(x=>x.ref===ref);
+  if(i>=0){a.splice(i,1);toast("Highlight removed")}
+  else{const v=bibleVerses.find(x=>x.ref===ref)||verses.find(x=>x.ref===ref)||{ref,text:text||""};a.push(v);toast("Verse highlighted")}
+  localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();refreshHl();
+}
+function addFavorite(ref){toggleHl(ref)}
+function removeFavorite(i){const a=favorites();a.splice(i,1);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();refreshHl();toast("Highlight removed")}
 function renderLessons(){
   const box=$("lessonGrid"); if(!box)return;
   box.innerHTML=lessons.map((l,i)=>'<div class="tile"><b>'+escapeHtml(l.title)+'</b><p class="muted">'+escapeHtml(l.ref)+'</p><p>'+escapeHtml(l.text)+'</p><button type="button" class="secondary" data-lesson="'+i+'">Open lesson</button></div>').join("");
@@ -767,7 +789,7 @@ function handleTap(e){
 
  const nav=e.target.closest("[data-screen]");if(nav){showScreen(nav.dataset.screen);return}
  const ref=e.target.closest("[data-ref]");if(ref){openVerse(ref.dataset.ref);return}
- const bm=e.target.closest("[data-bookmark]");if(bm){addFavorite(decodeURIComponent(bm.dataset.bookmark));return}
+ const hl=e.target.closest("[data-hl]");if(hl){if(!hl.classList.contains("hlbtn")&&String(window.getSelection&&window.getSelection()).trim())return;toggleHl(decodeURIComponent(hl.dataset.hl),hl.dataset.hltext?decodeURIComponent(hl.dataset.hltext):"");return}
  const rem=e.target.closest("[data-remove]");if(rem){removeFavorite(Number(rem.dataset.remove));return}
  const lesson=e.target.closest("[data-lesson]");if(lesson){openLesson(Number(lesson.dataset.lesson));return}
  const customDev=e.target.closest("[data-devotional]");if(customDev){const d=importedDevotionals[Number(customDev.dataset.devotional)];if(d){devIndex=allDevotionals.findIndex(x=>x.__imported&&x.title===d.title&&x.ref===d.ref);renderDevotional();showScreen("devotional");}return}

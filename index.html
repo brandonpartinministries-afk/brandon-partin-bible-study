@@ -206,9 +206,6 @@ body.light .toast{background:#172033;color:#fff}
   <div class="card"><span class="pill">📅 Plan</span><h2>Read the Bible in a year</h2><div id="planBox"></div></div>
   <div class="card"><span class="pill">⚙️ Tools</span><h2>Backup &amp; reading</h2><p class="muted">Highlights, notes, awards and progress are saved on this device. Export a backup to keep them safe or move them to another device.</p>
     <div class="bibleTools"><button type="button" class="primary" data-aw="export">⬇️ Export backup</button><button type="button" class="secondary" data-aw="import">⬆️ Import backup</button><button type="button" class="secondary" data-aw="sepia">📜 Sepia theme</button></div><input id="awImport" type="file" accept=".json" hidden></div>
-  <div class="card"><span class="pill">☁️ Sync</span><h2>Sync across devices</h2><p id="syStatus" class="muted">Sign in to keep highlights, notes, awards and plan progress on all your devices.</p>
-    <div id="syForm" class="stack"><input id="syEmail" type="email" autocomplete="email" placeholder="Email"><input id="syPass" type="password" autocomplete="current-password" placeholder="Password (6+ characters)"><div class="bibleTools"><button type="button" class="primary" data-sy="in">Sign in</button><button type="button" class="secondary" data-sy="up">Create account</button></div></div>
-    <div id="syOn" class="bibleTools" hidden><button type="button" class="primary" data-sy="now">Sync now</button><button type="button" class="danger" data-sy="out">Sign out</button></div></div>
 </section>
 
 <section id="admin" class="screen">
@@ -2120,32 +2117,7 @@ const row=document.querySelector("#search")?.closest(".searchRow");
 if(row){const sel=document.createElement("select");sel.id="searchScope";sel.style.marginTop="8px";sel.innerHTML='<option value="">All of the Bible</option><option value="OT">Old Testament</option><option value="NT">New Testament</option><option value="AP">Other books</option>';row.insertAdjacentElement("afterend",sel);sel.addEventListener("change",()=>search());
  const fill=()=>{if(sel.dataset.f||!Object.keys(bibleBookData).length)return;sel.dataset.f=1;sel.insertAdjacentHTML("beforeend",'<optgroup label="Single book">'+Object.keys(bibleBookData).map(b=>'<option>'+escapeHtml(b)+'</option>').join("")+'</optgroup>')};setInterval(fill,1500)}
 const st=document.createElement("style");st.textContent="mark{background:#f5c54266;color:inherit;border-radius:3px;padding:0 2px}";document.head.appendChild(st);
-/* ---- account sync ---- */
-const sb=()=>typeof supabaseClient!=="undefined"?supabaseClient:null,J=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(_){return d}};
-const keys=()=>Object.keys(localStorage).filter(k=>k.indexOf("bpm_")==0&&!/^bpm_(sync|sepia)/.test(k)&&(localStorage.getItem(k)||"").length<150000);
-const snap=()=>{const o={};keys().forEach(k=>o[k]=localStorage.getItem(k));return o};
-const stat=m=>{const e=$("syStatus");if(e)e.textContent=m};
-let lastH="",user=null;
-async function me(){const c=sb();if(!c)return null;try{const {data}=await c.auth.getUser();user=data&&data.user||null}catch(_){user=null}$("syForm").hidden=!!user;$("syOn").hidden=!user;if(user)stat("Signed in as "+user.email+". Changes sync automatically.");return user}
-async function push(){const c=sb();if(!c||!user)return;const d=snap();try{const {error}=await c.from("user_data").upsert({user_id:user.id,data:d,updated_at:new Date().toISOString()});if(error)throw error;lastH=JSON.stringify(d);localStorage.setItem("bpm_sync_at",new Date().toISOString())}catch(e){stat("Sync problem: "+(e.message||e))}}
-async function pull(){const c=sb();if(!c||!user)return;try{const {data:row,error}=await c.from("user_data").select("data,updated_at").eq("user_id",user.id).maybeSingle();if(error)throw error;if(row&&row.data){const r=row.data,newer=!localStorage.getItem("bpm_sync_at")||row.updated_at>localStorage.getItem("bpm_sync_at");
- Object.keys(r).filter(k=>k.indexOf("bpm_")==0).forEach(k=>{try{
-  if(k=="bpm_favorites"){const L=J(k,[]),R=JSON.parse(r[k]||"[]"),m=new Map(R.map(x=>[x.ref,x]));L.forEach(x=>m.set(x.ref,Object.assign({},m.get(x.ref),x)));localStorage.setItem(k,JSON.stringify([...m.values()]))}
-  else if(k=="bpm_chapters"||k=="bpm_earned")localStorage.setItem(k,JSON.stringify(Object.assign({},JSON.parse(r[k]),J(k,{}))));
-  else if(k=="bpm_plan"){const a=J(k,{start:"",days:{}}),b=JSON.parse(r[k]);localStorage.setItem(k,JSON.stringify({start:[a.start,b.start].filter(Boolean).sort()[0]||"",days:Object.assign({},b.days,a.days)}))}
-  else if(k=="bpm_done"){const a=J(k,{s:{},d:{}}),b=JSON.parse(r[k]);localStorage.setItem(k,JSON.stringify({s:Object.assign({},b.s,a.s),d:Object.assign({},b.d,a.d)}))}
-  else if(newer||localStorage.getItem(k)===null)localStorage.setItem(k,r[k]);
- }catch(_){}});
- try{if(typeof DONE!=="undefined"){const d=J("bpm_done",{s:{},d:{}});DONE.s=d.s||{};DONE.d=d.d||{}}}catch(_){}
- renderFavorites();refreshHl();if(typeof loadSettings!=="function"){}document.querySelector("[data-aw]")&&document.querySelector("[data-screen=progress]").click()}
- await push();stat("Synced just now. Changes sync automatically.")}catch(e){stat("Sync problem: "+(e.message||e)+" (run supabase-sync.sql once in Supabase)")}}
-document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.closest("[data-sy]");if(!b)return;const k=b.dataset.sy,c=sb();if(!c){stat("Cloud sync isn't connected.");return}
- const em=$("syEmail").value.trim(),pw=$("syPass").value;
- if(k=="in"||k=="up"){if(!em||pw.length<6){stat("Enter your email and a password of 6+ characters.");return}stat("Working…");try{const f=k=="in"?c.auth.signInWithPassword({email:em,password:pw}):c.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.origin+location.pathname}});const {data,error}=await f;if(error)throw error;if(k=="up"&&!data.session){stat("Check your email to confirm the account, then sign in.");return}await me();await pull()}catch(x){stat(x.message||String(x))}}
- else if(k=="now"){stat("Syncing…");await pull()}
- else if(k=="out"){await c.auth.signOut();user=null;await me();stat("Signed out. Your data stays on this device.")}});
-setTimeout(async()=>{if(await me())pull()},3000);
-setInterval(()=>{if(user&&JSON.stringify(snap())!==lastH)push()},20000);
+
 })();
 
 })();

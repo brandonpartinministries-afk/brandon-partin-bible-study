@@ -123,6 +123,8 @@ body.light .toast{background:#172033;color:#fff}
 
 <main>
 <section id="home" class="screen active">
+  <div id="annBanner" class="card" hidden></div>
+  <div id="dailyCard" class="card" hidden></div>
   <div class="hero">
     <div>
       <div class="eyebrow">FAITH · HOPE · SERVICE</div>
@@ -198,7 +200,9 @@ body.light .toast{background:#172033;color:#fff}
     <textarea id="notes" placeholder="Write notes from your study..."></textarea><br><br>
     <button type="button" class="primary" data-action="saveNotes">Save notes</button> <span id="notesStatus" class="muted"></span>
   </div>
-  <div class="card"><span class="pill">🖍 Highlights</span><h2>Highlighted verses</h2><div id="favorites"></div></div>
+  <div class="card"><span class="pill">🖍 Highlights</span><h2>Highlighted verses</h2>
+    <div class="bibleTools"><select id="favColor"><option value="">All colors</option><option value="#f5c542">Yellow</option><option value="#6fd08c">Green</option><option value="#69a9ff">Blue</option><option value="#ff8fab">Pink</option></select><select id="favSort"><option value="new">Newest first</option><option value="book">By book</option></select><button type="button" class="secondary" data-x="exp">⬇️ Export</button><button type="button" class="primary" data-x="mem">🧠 Memorize</button></div>
+    <div id="memCard" hidden></div><div id="favorites"></div></div>
 </section>
 
 <section id="awards" class="screen">
@@ -224,7 +228,8 @@ body.light .toast{background:#172033;color:#fff}
         <input id="srmTitle" placeholder="Sermon title"><input id="srmSpeaker" placeholder="Speaker (optional)"><input id="srmDate" type="date"><textarea id="srmDesc" rows="3" placeholder="Short description (optional)"></textarea>
         <input id="srmLink" placeholder="YouTube link"><label class="muted">Or upload a file</label><input id="srmFile" type="file" accept="audio/*,video/*">
         <button type="button" class="primary" data-action="sermonPublish">Publish sermon</button></div></div>
-      <div class="card"><h2>🏆 Custom awards</h2><p class="muted">Create awards members can earn. They publish to everyone when connected to Supabase.</p><div class="stack"><input id="awTitle" placeholder="Award title"><input id="awIcon" placeholder="Icon (emoji)" maxlength="4"><input id="awDesc" placeholder="Description"><select id="awMetric"><option value="highlights">Highlighted verses</option><option value="notes">Verse notes</option><option value="chapters">Chapters read</option><option value="devotionals">Devotionals done</option><option value="lessons">Studies done</option><option value="plandays">Plan days done</option><option value="streak">Plan streak (days)</option></select><input id="awTarget" type="number" min="1" placeholder="Target number"><button type="button" class="primary" data-aw="add">Add award</button></div><div id="awAdminList"></div></div>
+      <div class="card"><h2>📢 Announcement banner</h2><p class="muted">Shows at the top of Home for everyone.</p><div class="stack"><textarea id="annText" rows="2" placeholder="e.g. Study tonight at 7 PM"></textarea><input id="annUntil" type="date"><div class="bibleTools"><button type="button" class="primary" data-x="annsave">Publish</button><button type="button" class="danger" data-x="annclear">Clear</button></div></div></div>
+      <div class="card"><h2>🏆 Custom awards</h2><p class="muted">Create awards members can earn. They publish to everyone when connected to Supabase.</p><div class="stack"><input id="awTitle" placeholder="Award title"><input id="awIcon" placeholder="Icon (emoji)" maxlength="4"><input id="awDesc" placeholder="Description"><select id="awMetric"><option value="highlights">Highlighted verses</option><option value="notes">Verse notes</option><option value="chapters">Chapters read</option><option value="devotionals">Devotionals done</option><option value="lessons">Studies done</option><option value="memorized">Verses memorized</option><option value="plandays">Plan days done</option><option value="streak">Plan streak (days)</option></select><input id="awTarget" type="number" min="1" placeholder="Target number"><button type="button" class="primary" data-aw="add">Add award</button></div><div id="awAdminList"></div></div>
       <div class="card"><h2>🙏 Prayer Wall review</h2><p class="muted">New requests wait here until you approve them.</p><div id="wallPending"></div></div>
       <div class="card"><h2>🧭 Arrange tabs</h2><p class="muted">Move tabs up or down and choose which ones show. After you save, the new order applies for everyone, once the setup file has been run in Supabase. Home and Admin always stay visible.</p>
         <div id="tabEditor"></div><button type="button" class="primary" data-action="tabSave">Save arrangement</button> <button type="button" class="secondary" data-action="tabReset">Reset to default</button></div>
@@ -712,7 +717,7 @@ function search(){
 }
 function save(key,field,status){localStorage.setItem("bpm_"+key,$(field).value);$(status).textContent="Saved.";toast("Saved")}
 function favorites(){return JSON.parse(localStorage.getItem("bpm_favorites")||"[]")}
-function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No highlighted verses yet. Open a chapter and tap a verse to highlight it.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p>'+(v.note?'<p>📝 '+escapeHtml(v.note)+'</p>':'')+'</div><div class="stack"><button type="button" class="secondary" data-fnote="'+i+'">📝</button><button type="button" class="secondary" data-fcopy="'+i+'">📋</button><button type="button" class="danger" data-remove="'+i+'">Remove</button></div></div>').join("")}
+function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No highlighted verses yet. Open a chapter and tap a verse to highlight it.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow" data-c="'+(v.color||"#f5c542")+'" data-r="'+encodeURIComponent(v.ref)+'"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p>'+(v.note?'<p>📝 '+escapeHtml(v.note)+'</p>':'')+'</div><div class="stack"><button type="button" class="secondary" data-fnote="'+i+'">📝</button><button type="button" class="secondary" data-fcopy="'+i+'">📋</button><button type="button" class="danger" data-remove="'+i+'">Remove</button></div></div>').join("")}
 function refreshHl(){
   const set=new Map(favorites().map(x=>[x.ref,x.color||"#f5c542"]));
   document.querySelectorAll("[data-hl]").forEach(el=>{
@@ -2068,13 +2073,13 @@ if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controlle
 
 (function(){
 const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(_){return d}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
-const BI=[["h1","🖍","First Highlight","Highlight a verse","highlights",1],["h25","🌟","Verse Collector","Highlight 25 verses","highlights",25],["n5","📝","Note Taker","Add 5 verse notes","notes",5],["c10","📖","Chapter Reader","Read 10 chapters","chapters",10],["c100","🏅","Century Reader","Read 100 chapters","chapters",100],["d7","🌅","Devotion Habit","Finish 7 devotionals","devotionals",7],["d30","🔥","Devoted","Finish 30 devotionals","devotionals",30],["l5","🎓","Student","Finish 5 studies","lessons",5],["p7","📅","Plan Starter","Complete 7 plan days","plandays",7],["s7","⚡","Week Streak","7-day plan streak","streak",7],["s30","👑","Month Streak","30-day plan streak","streak",30]].map(a=>({id:a[0],icon:a[1],title:a[2],desc:a[3],metric:a[4],target:a[5]}));
+const BI=[["h1","🖍","First Highlight","Highlight a verse","highlights",1],["h25","🌟","Verse Collector","Highlight 25 verses","highlights",25],["n5","📝","Note Taker","Add 5 verse notes","notes",5],["c10","📖","Chapter Reader","Read 10 chapters","chapters",10],["c100","🏅","Century Reader","Read 100 chapters","chapters",100],["d7","🌅","Devotion Habit","Finish 7 devotionals","devotionals",7],["d30","🔥","Devoted","Finish 30 devotionals","devotionals",30],["l5","🎓","Student","Finish 5 studies","lessons",5],["m1","🧠","Memory Starter","Memorize a verse","memorized",1],["m5","🎯","Verse Keeper","Memorize 5 verses","memorized",5],["p7","📅","Plan Starter","Complete 7 plan days","plandays",7],["s7","⚡","Week Streak","7-day plan streak","streak",7],["s30","👑","Month Streak","30-day plan streak","streak",30]].map(a=>({id:a[0],icon:a[1],title:a[2],desc:a[3],metric:a[4],target:a[5]}));
 let CA=LS("bpm_custom_awards",[]);
 const day=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()),fk=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const plan=()=>LS("bpm_plan",{start:"",days:{}});
 const dayNo=()=>{const p=plan();if(!p.start)return 0;return Math.max(1,Math.min(365,Math.round((day(new Date())-day(new Date(p.start+"T12:00:00")))/864e5)+1))};
 function streak(){const p=plan();let n=dayNo(),c=0;if(!n)return 0;if(!p.days[n])n--;while(n>=1&&p.days[n]){c++;n--}return c}
-function metrics(){const f=favorites();return{highlights:f.length,notes:f.filter(x=>x.note).length,chapters:Object.keys(LS("bpm_chapters",{})).length,devotionals:Object.keys((typeof DONE!=="undefined"&&DONE.d)||{}).length,lessons:Object.keys((typeof DONE!=="undefined"&&DONE.s)||{}).length,plandays:Object.keys(plan().days).length,streak:streak()}}
+function metrics(){const f=favorites();return{highlights:f.length,notes:f.filter(x=>x.note).length,chapters:Object.keys(LS("bpm_chapters",{})).length,devotionals:Object.keys((typeof DONE!=="undefined"&&DONE.d)||{}).length,lessons:Object.keys((typeof DONE!=="undefined"&&DONE.s)||{}).length,plandays:Object.keys(plan().days).length,memorized:Object.keys(LS("bpm_memo",{})).length,streak:streak()}}
 function awRender(){const m=metrics(),all=BI.concat(CA.map(a=>Object.assign({custom:1},a))),g=$("awardGrid");if(g)g.innerHTML=all.map(a=>{const v=m[a.metric]||0,ok=v>=a.target;return'<div class="tile" style="opacity:'+(ok?1:.5)+'"><div style="font-size:2rem">'+escapeHtml(a.icon||"🏆")+'</div><b>'+escapeHtml(a.title)+'</b><p class="muted">'+escapeHtml(a.desc||"")+'</p><span class="pill">'+(ok?"✅ Earned":Math.min(v,a.target)+" / "+a.target)+'</span></div>'}).join("");const l=$("awAdminList");if(l)l.innerHTML=CA.map((a,i)=>'<div class="favrow"><div><b>'+escapeHtml((a.icon||"🏆")+" "+a.title)+'</b><p class="muted">'+escapeHtml(a.metric+" ≥ "+a.target)+'</p></div><button type="button" class="danger" data-aw="del" data-i="'+i+'">Delete</button></div>').join("")}
 function awCheck(){const m=metrics(),e=LS("bpm_earned",{});let n=0;BI.concat(CA).forEach(a=>{if((m[a.metric]||0)>=a.target&&!e[a.id]){e[a.id]=1;if(Object.keys(e).length>1||localStorage.getItem("bpm_earned"))toast("🏆 Award earned: "+a.title);n++}});if(n||!localStorage.getItem("bpm_earned")){SV("bpm_earned",e);awRender()}}
 async function cloudSave(){try{if(supabaseClient&&isAdmin)await supabaseClient.from("site_settings").upsert([{key:"customAwards",value:JSON.stringify(CA)}],{onConflict:"key"})}catch(_){}}
@@ -2082,7 +2087,7 @@ async function cloudLoad(){try{if(!supabaseClient)return;const {data}=await supa
 function chList(){const L=[];Object.keys(bibleBookData||{}).forEach(b=>{const k=bibleBookData[b],n=Number(k?.["chapter-count"]||k?.chapters?.length||0);for(let i=1;i<=n;i++)L.push([b,i])});return L}
 function planRender(){const box=$("planBox");if(!box)return;const p=plan();if(!p.start){box.innerHTML='<p class="muted">Read about 3 chapters a day and finish the whole Bible in 365 days.</p><button type="button" class="primary" data-aw="pstart">Start plan today</button>';return}const n=dayNo(),L=chList(),a=Math.floor((n-1)*L.length/365),z=Math.max(a+1,Math.floor(n*L.length/365)),r=L.slice(a,z),t=r.length?r[0][0]+" "+r[0][1]+(r.length>1?" – "+r[r.length-1][0]+" "+r[r.length-1][1]:""):"Complete!";box.innerHTML='<p><b>Day '+n+' of 365</b> · 🔥 '+streak()+'-day streak</p><p>'+escapeHtml(t)+'</p><div class="bibleTools"><button type="button" class="secondary" data-aw="popen">Open reading</button><button type="button" class="primary" data-aw="pdone">'+(p.days[n]?"✅ Done today":"Mark today done")+'</button><button type="button" class="danger" data-aw="preset">Reset</button></div>'}
 function popen(){const L=chList(),n=dayNo(),c=L[Math.floor((n-1)*L.length/365)];if(!c)return;$("bookSelect").value=c[0];populateChapters();$("chapterSelect").value=String(c[1]);openChapter()}
-const _oc=openChapter;openChapter=function(){_oc();try{const b=$("bookSelect").value,c=$("chapterSelect").value,r=LS("bpm_chapters",{});if(!$("chapterCard").hidden){r[b+" "+c]=1;SV("bpm_chapters",r)}}catch(_){}};
+const _oc=openChapter;openChapter=function(){_oc();try{const b=$("bookSelect").value,c=$("chapterSelect").value,r=LS("bpm_chapters",{});if(!$("chapterCard").hidden){r[b+" "+c]=1;SV("bpm_chapters",r);SV("bpm_last",{b:b,c:c})}}catch(_){}};
 function sepia(on){document.body.classList.toggle("sepia",on);localStorage.setItem("bpm_sepia",on?"1":"")}
 const st=document.createElement("style");st.textContent="body.sepia{--bg:#f1e4c8;--panel:#f8eed7;--panel2:#efe0bd;--text:#3b2f1c;--muted:#6b5a3c;--line:#d4c39c;--blue:#8a5a14;--accent:#8a5a14;background:var(--bg);color:var(--text)}body.sepia .card,body.sepia .tile{background:var(--panel)}body.sepia .top{background:rgba(241,228,200,.95)}body.sepia .secondary,body.sepia .navlinks button{background:var(--panel2);color:var(--text)}body.sepia .verse{color:#3b2f1c}";document.head.appendChild(st);
 if(localStorage.getItem("bpm_sepia"))sepia(true);
@@ -2120,6 +2125,40 @@ const st=document.createElement("style");st.textContent="mark{background:#f5c542
 
 })();
 
+
+/* ===== extras: memorize, filters/export, announcement, daily verse, resume ===== */
+(function(){
+const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(_){return d}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
+const bookOf=r=>r.replace(/\s+\d+:\d+$/,"");
+const css=document.createElement("style");css.textContent=".mw{display:inline-block;min-width:3.2em;border-bottom:2px solid var(--blue,#69a9ff);cursor:pointer;color:transparent;user-select:none}.mw.on{color:inherit;border-color:#6fd08c}#memCard{margin:10px 0;padding:12px;border-radius:12px;border:1px solid var(--line,#444)}";document.head.appendChild(css);
+const _rf=renderFavorites;renderFavorites=function(){_rf();post()};
+function post(){const box=$("favorites");if(!box)return;const c=$("favColor")?.value,rows=[...box.querySelectorAll(".favrow")];rows.forEach(r=>r.style.display=(!c||r.dataset.c===c)?"":"none");if($("favSort")?.value=="book"){const o=Object.keys(bibleBookData);rows.sort((a,b)=>o.indexOf(bookOf(decodeURIComponent(a.dataset.r)))-o.indexOf(bookOf(decodeURIComponent(b.dataset.r)))).forEach(r=>box.appendChild(r))}}
+document.addEventListener("change",e=>{if(e.target.id=="favColor"||e.target.id=="favSort")renderFavorites()});
+let cur=null,lvl=.3;
+function memShow(){const f=favorites(),m=$("memCard");m.hidden=false;if(!f.length){m.innerHTML='<p class="muted">Highlight a verse first, then tap Memorize.</p>';return}
+ if(!cur||!f.find(x=>x.ref===cur.ref))cur=f[Math.floor(Math.random()*f.length)];
+ const w=cur.text.split(/\s+/),seed=[...cur.ref].reduce((a,c)=>(a*31+c.charCodeAt(0))%100003,7);
+ m.innerHTML='<b>'+escapeHtml(cur.ref)+'</b><p>'+w.map((x,i)=>{const r=Math.abs(Math.sin(seed+i*12.9898)*43758.5453)%1;return r<lvl&&x.length>2?'<span class="mw" data-x="rv">'+escapeHtml(x)+'</span>':escapeHtml(x)}).join(" ")+'</p><p class="muted">Tap a blank to check yourself. '+Math.round(lvl*100)+'% hidden.</p><div class="bibleTools"><button type="button" class="secondary" data-x="hard">Harder</button><button type="button" class="secondary" data-x="next">Next verse</button><button type="button" class="primary" data-x="known">✅ I know it</button></div>'}
+const DV="John 3:16,Psalms 23:1,Proverbs 3:5,Philippians 4:13,Romans 8:28,Jeremiah 29:11,Isaiah 41:10,Joshua 1:9,Matthew 11:28,Psalms 46:1,Romans 12:2,Galatians 5:22,Hebrews 11:1,2 Timothy 1:7,Psalms 119:105,Matthew 6:33,John 14:6,Romans 5:8,Ephesians 2:8,Isaiah 40:31,Psalms 27:1,1 Corinthians 13:4,Colossians 3:23,James 1:5,1 John 4:19,Psalms 34:8,Proverbs 22:6,Matthew 5:16,John 15:5,Psalms 37:4,Lamentations 3:22".split(",");
+function ann(){const a=LS("bpm_ann",{}),b=$("annBanner");if(!b)return;const today=new Date().toISOString().slice(0,10),ok=a.t&&(!a.u||a.u>=today)&&localStorage.getItem("bpm_ann_x")!==a.t;b.hidden=!ok;if(ok)b.innerHTML='<div class="bibleTools"><span>📢 '+escapeHtml(a.t)+'</span><button type="button" class="secondary" data-x="annx">✕</button></div>'}
+function daily(){const c=$("dailyCard");if(!c||!bibleVerses.length)return;const d=new Date(),n=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5),ref=DV[n%DV.length],v=bibleVerses.find(x=>x.ref===ref);if(!v)return;const l=LS("bpm_last",null);c.hidden=false;c.innerHTML='<span class="pill">🌅 Verse of the day</span><p class="verse">'+escapeHtml(v.text)+'</p><b>'+escapeHtml(v.ref)+'</b><div class="bibleTools" style="margin-top:8px"><button type="button" class="secondary hlbtn" data-hl="'+encodeURIComponent(v.ref)+'" data-hltext="'+encodeURIComponent(v.text)+'">🖍 Highlight</button><button type="button" class="secondary" data-x="share" data-t="'+encodeURIComponent(v.ref+" — "+v.text)+'">Share</button>'+(l?'<button type="button" class="primary" data-x="resume">▶ Continue '+escapeHtml(l.b+" "+l.c)+'</button>':'')+'</div>';refreshHl()}
+async function cloud(){try{const {data}=await supabaseClient.from("site_settings").select("value").eq("key","announcement").maybeSingle();if(data&&data.value){SV("bpm_ann",JSON.parse(data.value));ann()}}catch(_){}}
+async function cloudSave(o){try{if(supabaseClient&&isAdmin)await supabaseClient.from("site_settings").upsert([{key:"announcement",value:JSON.stringify(o)}],{onConflict:"key"})}catch(_){}}
+document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.closest("[data-x]");if(!b)return;const k=b.dataset.x;
+ if(k=="mem"){cur=null;memShow()}
+ else if(k=="rv")b.classList.toggle("on");
+ else if(k=="hard"){lvl=lvl>=1?.3:Math.min(1,lvl+.25);memShow()}
+ else if(k=="next"){cur=null;memShow()}
+ else if(k=="known"){const m=LS("bpm_memo",{});if(cur)m[cur.ref]=1;SV("bpm_memo",m);toast("Memorized! 🎉");cur=null;memShow()}
+ else if(k=="exp"){const t=favorites().map(v=>v.ref+" — "+v.text+(v.note?"\n   Note: "+v.note:"")).join("\n\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/plain"}));a.download="my-highlights.txt";a.click()}
+ else if(k=="annsave"){if(!isAdmin){toast("Sign in as an administrator first");return}const o={t:$("annText").value.trim(),u:$("annUntil").value};SV("bpm_ann",o);localStorage.removeItem("bpm_ann_x");ann();await cloudSave(o);toast("Announcement published")}
+ else if(k=="annclear"){if(!isAdmin)return;SV("bpm_ann",{});ann();await cloudSave({});toast("Announcement cleared")}
+ else if(k=="annx"){localStorage.setItem("bpm_ann_x",LS("bpm_ann",{}).t||"");ann()}
+ else if(k=="share"){const t=decodeURIComponent(b.dataset.t);try{if(navigator.share)await navigator.share({text:t});else{await navigator.clipboard.writeText(t);toast("Copied")}}catch(_){}}
+ else if(k=="resume"){const l=LS("bpm_last",null);if(!l)return;$("bookSelect").value=l.b;populateChapters();$("chapterSelect").value=String(l.c);openChapter();showScreen("bible")}
+});
+ann();cloud();renderFavorites();let tries=0;const iv=setInterval(()=>{daily();if($("dailyCard").hidden===false||++tries>40)clearInterval(iv)},1500);
+})();
 })();
 </script>
 

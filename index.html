@@ -114,7 +114,7 @@ body.light .toast{background:#172033;color:#fff}
     <button type="button" data-screen="sacred">Sacred Texts</button>
     <button type="button" data-screen="journal">Journal</button>
     <button type="button" data-screen="settings">Settings</button>
-    <button type="button" data-screen="progress">🏆 Awards</button>
+    <button type="button" data-screen="awards">🏆 Awards</button>
     <button type="button" data-screen="admin" id="adminNav">🔐 Admin</button>
   </nav>
 </div>
@@ -201,7 +201,7 @@ body.light .toast{background:#172033;color:#fff}
   <div class="card"><span class="pill">🖍 Highlights</span><h2>Highlighted verses</h2><div id="favorites"></div></div>
 </section>
 
-<section id="progress" class="screen">
+<section id="awards" class="screen">
   <div class="card"><span class="pill">🏆 Awards</span><h1>Your Awards</h1><div id="awardGrid" class="grid2"></div></div>
   <div class="card"><span class="pill">📅 Plan</span><h2>Read the Bible in a year</h2><div id="planBox"></div></div>
   <div class="card"><span class="pill">⚙️ Tools</span><h2>Backup &amp; reading</h2><p class="muted">Highlights, notes, awards and progress are saved on this device. Export a backup to keep them safe or move them to another device.</p>
@@ -2104,7 +2104,7 @@ document.addEventListener("click",async e=>{const t=e.target,q=s=>t.closest&&t.c
   return}
 });
 $("awImport").addEventListener("change",async e=>{try{const o=JSON.parse(await e.target.files[0].text());Object.keys(o).filter(k=>k.indexOf("bpm_")==0&&typeof o[k]=="string").forEach(k=>localStorage.setItem(k,o[k]));CA=LS("bpm_custom_awards",[]);renderFavorites();refreshHl();planRender();awRender();toast("Backup restored")}catch(_){toast("That file isn't a valid backup")}e.target.value=""});
-document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-screen=progress]")){awCheck();planRender();awRender()}});
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-screen=awards]")){awCheck();planRender();awRender()}});
 awRender();planRender();setInterval(awCheck,4000);setTimeout(cloudLoad,2500);setTimeout(awCheck,800);
 })();
 

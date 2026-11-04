@@ -1,0 +1,13 @@
+name: Keep Supabase awake
+on:
+  schedule:
+    - cron: "0 12 */3 * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping database
+        run: |
+          curl -fsS "${{ secrets.SUPABASE_URL }}/rest/v1/site_settings?select=key&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"

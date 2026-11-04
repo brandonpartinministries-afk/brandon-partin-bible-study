@@ -2141,7 +2141,7 @@ async function pull(){const c=sb();if(!c||!user)return;try{const {data:row,error
  await push();stat("Synced just now. Changes sync automatically.")}catch(e){stat("Sync problem: "+(e.message||e)+" (run supabase-sync.sql once in Supabase)")}}
 document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.closest("[data-sy]");if(!b)return;const k=b.dataset.sy,c=sb();if(!c){stat("Cloud sync isn't connected.");return}
  const em=$("syEmail").value.trim(),pw=$("syPass").value;
- if(k=="in"||k=="up"){if(!em||pw.length<6){stat("Enter your email and a password of 6+ characters.");return}stat("Working…");try{const f=k=="in"?c.auth.signInWithPassword({email:em,password:pw}):c.auth.signUp({email:em,password:pw});const {data,error}=await f;if(error)throw error;if(k=="up"&&!data.session){stat("Check your email to confirm the account, then sign in.");return}await me();await pull()}catch(x){stat(x.message||String(x))}}
+ if(k=="in"||k=="up"){if(!em||pw.length<6){stat("Enter your email and a password of 6+ characters.");return}stat("Working…");try{const f=k=="in"?c.auth.signInWithPassword({email:em,password:pw}):c.auth.signUp({email:em,password:pw,options:{emailRedirectTo:location.origin+location.pathname}});const {data,error}=await f;if(error)throw error;if(k=="up"&&!data.session){stat("Check your email to confirm the account, then sign in.");return}await me();await pull()}catch(x){stat(x.message||String(x))}}
  else if(k=="now"){stat("Syncing…");await pull()}
  else if(k=="out"){await c.auth.signOut();user=null;await me();stat("Signed out. Your data stays on this device.")}});
 setTimeout(async()=>{if(await me())pull()},3000);

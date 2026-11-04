@@ -63,7 +63,7 @@ body{transition:background .2s,color .2s}.card,.tile{box-shadow:var(--shadow)}
 .settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.verseRow{line-height:1.8;padding:12px 0;border-bottom:1px solid var(--line);font-size:var(--verse-size,1.08rem)}.verseNum{display:inline-flex;min-width:30px;color:var(--accent);font-weight:800}.result{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}.tile{transition:transform .15s, border-color .15s}.tile:active{transform:scale(.98)}
 body.light{--bg:#f4f7fb;--panel:#fff;--panel2:#edf3fa;--text:#172033;--muted:#536078;--line:#d6deea;--blue:#1264c8;--silver:#24364d;--good:#167044;background:var(--bg);color:var(--text)}
 body.light{background:var(--bg)}
-.verseRow[data-hl]{cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s}
+.verseRow[data-hl]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;transition:background .15s}
 .verseRow.hl{background:rgba(245,197,66,.24);box-shadow:inset 3px 0 0 #f5c542;border-radius:8px;padding-left:10px;padding-right:10px}
 .verse.hl{background:rgba(245,197,66,.24);box-shadow:inset 3px 0 0 #f5c542;border-radius:8px;padding:8px 12px}
 body.light .verseRow.hl,body.light .verse.hl{background:rgba(245,197,66,.45)}
@@ -518,7 +518,7 @@ function openChapter(){
   localStorage.setItem("bpm_continue",JSON.stringify({book,chapter})); updateContinue();
   const card=$("chapterCard"); card.hidden=false;
   card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow" data-hl="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'" data-hltext="'+encodeURIComponent(v.text)+'"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+'</div>').join("");
-  card.querySelector("h2").insertAdjacentHTML("afterend",'<p class="muted hlHint">Tap a verse to highlight it. Tap again to remove.</p>');
+  card.querySelector("h2").insertAdjacentHTML("afterend",'<p class="muted hlHint">Press and hold a verse to highlight it. Press and hold again to remove.</p>');
   refreshHl();
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -719,6 +719,19 @@ function toggleHl(ref,text){
   localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();refreshHl();
 }
 function addFavorite(ref){toggleHl(ref)}
+(function(){
+  let t=null,xy=null;
+  const row=e=>e.target.closest&&e.target.closest(".verseRow[data-hl]");
+  const start=e=>{const r=row(e);if(!r)return;const p=e.touches?e.touches[0]:e;xy=[p.clientX,p.clientY];clearTimeout(t);t=setTimeout(()=>{t=null;toggleHl(decodeURIComponent(r.dataset.hl),r.dataset.hltext?decodeURIComponent(r.dataset.hltext):"");if(navigator.vibrate)try{navigator.vibrate(30)}catch(_){}},500)};
+  const cancel=()=>{clearTimeout(t);t=null};
+  const move=e=>{if(!t||!xy)return;const p=e.touches?e.touches[0]:e;if(Math.abs(p.clientX-xy[0])>10||Math.abs(p.clientY-xy[1])>10)cancel()};
+  document.addEventListener("touchstart",start,{passive:true});
+  document.addEventListener("touchmove",move,{passive:true});
+  document.addEventListener("touchend",cancel);document.addEventListener("touchcancel",cancel);
+  document.addEventListener("mousedown",start);document.addEventListener("mousemove",move);
+  document.addEventListener("mouseup",cancel);document.addEventListener("scroll",cancel,true);
+  document.addEventListener("contextmenu",e=>{if(row(e))e.preventDefault()});
+})();
 function removeFavorite(i){const a=favorites();a.splice(i,1);localStorage.setItem("bpm_favorites",JSON.stringify(a));renderFavorites();refreshHl();toast("Highlight removed")}
 function renderLessons(){
   const box=$("lessonGrid"); if(!box)return;
@@ -789,7 +802,7 @@ function handleTap(e){
 
  const nav=e.target.closest("[data-screen]");if(nav){showScreen(nav.dataset.screen);return}
  const ref=e.target.closest("[data-ref]");if(ref){openVerse(ref.dataset.ref);return}
- const hl=e.target.closest("[data-hl]");if(hl){if(!hl.classList.contains("hlbtn")&&String(window.getSelection&&window.getSelection()).trim())return;toggleHl(decodeURIComponent(hl.dataset.hl),hl.dataset.hltext?decodeURIComponent(hl.dataset.hltext):"");return}
+ const hl=e.target.closest("[data-hl]");if(hl){if(!hl.classList.contains("hlbtn"))return;toggleHl(decodeURIComponent(hl.dataset.hl),hl.dataset.hltext?decodeURIComponent(hl.dataset.hltext):"");return}
  const rem=e.target.closest("[data-remove]");if(rem){removeFavorite(Number(rem.dataset.remove));return}
  const lesson=e.target.closest("[data-lesson]");if(lesson){openLesson(Number(lesson.dataset.lesson));return}
  const customDev=e.target.closest("[data-devotional]");if(customDev){const d=importedDevotionals[Number(customDev.dataset.devotional)];if(d){devIndex=allDevotionals.findIndex(x=>x.__imported&&x.title===d.title&&x.ref===d.ref);renderDevotional();showScreen("devotional");}return}

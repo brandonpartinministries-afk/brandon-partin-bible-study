@@ -2069,9 +2069,6 @@ if(localStorage.getItem("bpm_font"))document.documentElement.style.setProperty("
 updateContinue();
 if("serviceWorker" in navigator){const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadSW&&!reloaded){reloaded=true;location.reload();}});navigator.serviceWorker.register("sw.js?v=12").then(r=>r.update&&r.update()).catch(()=>{});}
 
-})();
-</script>
-<script>
 (function(){
 const LS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(_){return d}},SV=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
 const BI=[["h1","🖍","First Highlight","Highlight a verse","highlights",1],["h25","🌟","Verse Collector","Highlight 25 verses","highlights",25],["n5","📝","Note Taker","Add 5 verse notes","notes",5],["c10","📖","Chapter Reader","Read 10 chapters","chapters",10],["c100","🏅","Century Reader","Read 100 chapters","chapters",100],["d7","🌅","Devotion Habit","Finish 7 devotionals","devotionals",7],["d30","🔥","Devoted","Finish 30 devotionals","devotionals",30],["l5","🎓","Student","Finish 5 studies","lessons",5],["p7","📅","Plan Starter","Complete 7 plan days","plandays",7],["s7","⚡","Week Streak","7-day plan streak","streak",7],["s30","👑","Month Streak","30-day plan streak","streak",30]].map(a=>({id:a[0],icon:a[1],title:a[2],desc:a[3],metric:a[4],target:a[5]}));
@@ -2113,8 +2110,7 @@ $("awImport").addEventListener("change",async e=>{try{const o=JSON.parse(await e
 document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("[data-screen=progress]")){awCheck();planRender();awRender()}});
 awRender();planRender();setInterval(awCheck,4000);setTimeout(cloudLoad,2500);setTimeout(awCheck,800);
 })();
-</script>
-<script>
+
 (function(){
 const OT="Genesis,Exodus,Leviticus,Numbers,Deuteronomy,Joshua,Judges,Ruth,1 Samuel,2 Samuel,1 Kings,2 Kings,1 Chronicles,2 Chronicles,Ezra,Nehemiah,Esther,Job,Psalms,Proverbs,Ecclesiastes,Song of Solomon,Isaiah,Jeremiah,Lamentations,Ezekiel,Daniel,Hosea,Joel,Amos,Obadiah,Jonah,Micah,Nahum,Habakkuk,Zephaniah,Haggai,Zechariah,Malachi".split(","),NT="Matthew,Mark,Luke,John,Acts,Romans,1 Corinthians,2 Corinthians,Galatians,Ephesians,Philippians,Colossians,1 Thessalonians,2 Thessalonians,1 Timothy,2 Timothy,Titus,Philemon,Hebrews,James,1 Peter,2 Peter,1 John,2 John,3 John,Jude,Revelation".split(",");
 const bookOf=r=>r.replace(/\s+\d+:\d+$/,"");
@@ -2151,6 +2147,9 @@ document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.c
 setTimeout(async()=>{if(await me())pull()},3000);
 setInterval(()=>{if(user&&JSON.stringify(snap())!==lastH)push()},20000);
 })();
+
+})();
 </script>
+
 </body>
 </html>

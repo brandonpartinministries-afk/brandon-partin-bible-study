@@ -228,6 +228,7 @@ body.light .toast{background:#172033;color:#fff}
         <input id="srmTitle" placeholder="Sermon title"><input id="srmSpeaker" placeholder="Speaker (optional)"><input id="srmDate" type="date"><textarea id="srmDesc" rows="3" placeholder="Short description (optional)"></textarea>
         <input id="srmLink" placeholder="YouTube link"><label class="muted">Or upload a file</label><input id="srmFile" type="file" accept="audio/*,video/*">
         <button type="button" class="primary" data-action="sermonPublish">Publish sermon</button></div></div>
+      <div class="card"><h2>📊 App insights</h2><p class="muted">Counts devices/browsers, since visitors don't need an account.</p><div id="insBox" class="muted">Loading…</div><button type="button" class="secondary" data-x="insrefresh">↻ Refresh</button></div>
       <div class="card"><h2>📢 Announcement banner</h2><p class="muted">Shows at the top of Home for everyone.</p><div class="stack"><textarea id="annText" rows="2" placeholder="e.g. Study tonight at 7 PM"></textarea><input id="annUntil" type="date"><div class="bibleTools"><button type="button" class="primary" data-x="annsave">Publish</button><button type="button" class="danger" data-x="annclear">Clear</button></div></div></div>
       <div class="card"><h2>🏆 Custom awards</h2><p class="muted">Create awards members can earn. They publish to everyone when connected to Supabase.</p><div class="stack"><input id="awTitle" placeholder="Award title"><input id="awIcon" placeholder="Icon (emoji)" maxlength="4"><input id="awDesc" placeholder="Description"><select id="awMetric"><option value="highlights">Highlighted verses</option><option value="notes">Verse notes</option><option value="chapters">Chapters read</option><option value="devotionals">Devotionals done</option><option value="lessons">Studies done</option><option value="memorized">Verses memorized</option><option value="plandays">Plan days done</option><option value="streak">Plan streak (days)</option></select><input id="awTarget" type="number" min="1" placeholder="Target number"><button type="button" class="primary" data-aw="add">Add award</button></div><div id="awAdminList"></div></div>
       <div class="card"><h2>🙏 Prayer Wall review</h2><p class="muted">New requests wait here until you approve them.</p><div id="wallPending"></div></div>
@@ -2158,6 +2159,25 @@ document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.c
  else if(k=="resume"){const l=LS("bpm_last",null);if(!l)return;$("bookSelect").value=l.b;populateChapters();$("chapterSelect").value=String(l.c);openChapter();showScreen("bible")}
 });
 ann();cloud();renderFavorites();let tries=0;daily();setInterval(daily,5000);
+})();
+
+/* ===== visit tracking + admin insights ===== */
+(function(){
+const sb=()=>typeof supabaseClient!=="undefined"?supabaseClient:null;
+async function logVisit(){const c=sb();if(!c)return;try{let id=localStorage.getItem("bpm_vid");if(!id){id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random().toString(16).slice(2));localStorage.setItem("bpm_vid",id)}
+ const last=+localStorage.getItem("bpm_vlast")||0,isNew=!localStorage.getItem("bpm_vsent");if(!isNew&&Date.now()-last<6*36e5)return;
+ const {error}=await c.from("app_visits").insert({visitor_id:id,is_new:isNew});if(!error){localStorage.setItem("bpm_vlast",String(Date.now()));localStorage.setItem("bpm_vsent","1")}}catch(_){}}
+async function insights(){const c=sb(),box=$("insBox");if(!c||!box||!isAdmin)return;box.textContent="Loading…";
+ try{const {data,error}=await c.from("app_visits").select("visitor_id,created_at,is_new").order("created_at",{ascending:false}).limit(20000);if(error)throw error;
+ const now=Date.now(),D=864e5,t0=new Date().setHours(0,0,0,0),win=[["Today",t0],["Last 7 days",now-7*D],["Last 30 days",now-30*D]];
+ const all=new Set(data.map(r=>r.visitor_id));
+ const row=(l,f)=>'<tr><td>'+l+'</td>'+win.map(w=>'<td><b>'+f(w[1])+'</b></td>').join("")+'</tr>';
+ const act=t=>new Set(data.filter(r=>new Date(r.created_at)>=t).map(r=>r.visitor_id)).size,nw=t=>data.filter(r=>r.is_new&&new Date(r.created_at)>=t).length,vis=t=>data.filter(r=>new Date(r.created_at)>=t).length;
+ box.innerHTML='<p style="font-size:1.4rem;margin:6px 0"><b>'+all.size+'</b> total devices</p><table style="width:100%;text-align:left"><tr><th></th>'+win.map(w=>'<th>'+w[0]+'</th>').join("")+'</tr>'+row("Active",act)+row("New",nw)+row("Visits",vis)+'</table>'}
+ catch(e){box.textContent="Couldn't load. Run supabase-insights.sql in Supabase first. ("+(e.message||e)+")"}}
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest('[data-x="insrefresh"]'))insights()});
+let done=false;setInterval(()=>{if(isAdmin&&!done){done=true;insights()}if(!isAdmin)done=false},3000);
+setTimeout(logVisit,2500);
 })();
 })();
 </script>

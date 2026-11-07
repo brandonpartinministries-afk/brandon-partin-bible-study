@@ -540,7 +540,7 @@ function openChapter(){
   localStorage.setItem("bpm_continue",JSON.stringify({book,chapter})); updateContinue();
   const card=$("chapterCard"); card.hidden=false;
   card.innerHTML='<span class="pill">📖 '+escapeHtml(book+" "+chapter)+'</span><h2>'+escapeHtml(book+" "+chapter)+'</h2>'+c.verses.map(v=>'<div class="verseRow" data-hl="'+encodeURIComponent(book+" "+chapter+":"+v.verse)+'" data-hltext="'+encodeURIComponent(v.text)+'"><span class="verseNum">'+v.verse+'</span>'+escapeHtml(v.text)+'</div>').join("");
-  card.querySelector("h2").insertAdjacentHTML("afterend",'<p class="muted hlHint">Press and hold a verse to highlight it. Press and hold again to remove.</p><div class="bibleTools" id="hlTools">'+["#f5c542","#6fd08c","#69a9ff","#ff8fab"].map(c=>'<button type="button" class="secondary" data-hlc="'+c+'" style="border-color:'+c+'">●</button>').join("")+'<button type="button" class="secondary" data-copych="1">📋 Copy chapter</button></div>');
+  card.querySelector("h2").insertAdjacentHTML("afterend",'<p class="muted hlHint">Press and hold a verse to highlight it. Press and hold again to remove.</p><div class="bibleTools" id="hlTools">'+["#f5c542","#6fd08c","#69a9ff","#ff8fab"].map(c=>'<button type="button" class="secondary" data-hlc="'+c+'" style="border-color:'+c+'">●</button>').join("")+'<button type="button" class="secondary" data-copych="1">📋 Copy chapter</button><button type="button" class="secondary" data-vp="1">🖼 Verse picture</button></div>');
   refreshHl();
   showScreen("bible"); card.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -725,7 +725,7 @@ function search(){
 }
 function save(key,field,status){localStorage.setItem("bpm_"+key,$(field).value);$(status).textContent="Saved.";toast("Saved")}
 function favorites(){return JSON.parse(localStorage.getItem("bpm_favorites")||"[]")}
-function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No highlighted verses yet. Open a chapter and tap a verse to highlight it.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow" data-c="'+(v.color||"#f5c542")+'" data-r="'+encodeURIComponent(v.ref)+'"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p>'+(v.note?'<p>📝 '+escapeHtml(v.note)+'</p>':'')+'</div><div class="stack"><button type="button" class="secondary" data-fnote="'+i+'">📝</button><button type="button" class="secondary" data-fcopy="'+i+'">📋</button><button type="button" class="danger" data-remove="'+i+'">Remove</button></div></div>').join("")}
+function renderFavorites(){const a=favorites(),box=$("favorites");if(!a.length){box.innerHTML='<p class="muted">No highlighted verses yet. Open a chapter and tap a verse to highlight it.</p>';return}box.innerHTML=a.map((v,i)=>'<div class="favrow" data-c="'+(v.color||"#f5c542")+'" data-r="'+encodeURIComponent(v.ref)+'"><div><b>'+escapeHtml(v.ref)+'</b><p class="muted">'+escapeHtml(v.text)+'</p>'+(v.note?'<p>📝 '+escapeHtml(v.note)+'</p>':'')+'</div><div class="stack"><button type="button" class="secondary" data-fnote="'+i+'">📝</button><button type="button" class="secondary" data-fcopy="'+i+'">📋</button><button type="button" class="secondary" data-fpic="'+i+'">🖼</button><button type="button" class="danger" data-remove="'+i+'">Remove</button></div></div>').join("")}
 function refreshHl(){
   const set=new Map(favorites().map(x=>[x.ref,x.color||"#f5c542"]));
   document.querySelectorAll("[data-hl]").forEach(el=>{
@@ -2224,6 +2224,14 @@ $("piFile").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)
 ["piText","piFoot"].forEach(i=>$(i).addEventListener("input",draw));
 thumbs();setTimeout(draw,600);document.addEventListener("click",ev=>{if(ev.target.closest&&ev.target.closest("[data-screen=journal]"))setTimeout(draw,200)});
 })();
+
+/* ===== verse pictures from chapters and highlights ===== */
+(function(){let on=false;
+document.addEventListener("click",e=>{const q=x=>e.target.closest&&e.target.closest(x);let b;
+ if(b=q("[data-vp]")){on=!on;b.textContent=on?"👆 Tap a verse (tap to cancel)":"🖼 Verse picture";if(on)toast("Tap the verse you want as a picture");return}
+ if(b=q("[data-fpic]")){const v=favorites()[+b.dataset.fpic];if(v){toast("Making picture…");verseImage(v.ref,v.text)}return}
+ const r=q(".verseRow[data-hl]");if(on&&r){on=false;const bt=document.querySelector("[data-vp]");if(bt)bt.textContent="🖼 Verse picture";toast("Making picture…");verseImage(decodeURIComponent(r.dataset.hl),decodeURIComponent(r.dataset.hltext||""))}
+});})();
 })();
 </script>
 

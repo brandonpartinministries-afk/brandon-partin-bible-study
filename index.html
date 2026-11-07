@@ -197,6 +197,13 @@ body.light .toast{background:#172033;color:#fff}
     <div id="prayerFilter"></div><div id="prayerList"></div>
     <button type="button" class="secondary" data-action="prayerExport">⬇ Download my prayers</button>
   </div>
+  <div class="card"><span class="pill">🖼 Prayer image</span><h2>Make a shareable prayer image</h2>
+    <textarea id="piText" rows="4" placeholder="Type or paste a prayer or verse..."></textarea>
+    <input id="piFoot" placeholder="Reference or signature (optional)" style="margin-top:8px">
+    <div class="bibleTools" style="margin-top:8px"><button type="button" class="secondary" data-pi-use="1">Use my prayer above</button><button type="button" class="secondary" data-pi-add="1">➕ Add picture</button></div>
+    <div id="piThumbs" class="bibleTools" style="margin:10px 0"></div><input id="piFile" type="file" accept="image/*" hidden>
+    <canvas id="piCanvas" style="width:100%;max-width:420px;border-radius:12px;display:block;margin:0 auto"></canvas>
+    <div class="bibleTools" style="margin-top:10px"><button type="button" class="primary" data-pi-share="1">📤 Share image</button><button type="button" class="secondary" data-pi-dl="1">⬇️ Download</button></div></div>
   <div class="card"><span class="pill">📝 Personal notes</span><h2>Notes</h2>
     <textarea id="notes" placeholder="Write notes from your study..."></textarea><br><br>
     <button type="button" class="primary" data-action="saveNotes">Save notes</button> <span id="notesStatus" class="muted"></span>
@@ -2187,6 +2194,34 @@ setTimeout(logVisit,2500);
 
 (function(){const r=$("speechRate"),v=$("speechRateVal"),vs=$("voiceSel");if(r){const sv=parseFloat(localStorage.getItem("bpm_rate"));if(sv>=.5&&sv<=1.3)r.value=sv;const sh=()=>{if(v)v.textContent=Number(r.value).toFixed(2).replace(/0$/,"")+"×"};sh();r.addEventListener("input",()=>{sh();localStorage.setItem("bpm_rate",r.value)})}
 if(vs)vs.addEventListener("change",()=>localStorage.setItem("bpm_voicename",vs.value))})();
+
+/* ===== prayer image maker ===== */
+(function(){
+const T=[["morning","Morning"],["midday","Midday"],["evening","Evening"],["bedtime","Bedtime"]],IM={};
+let sel=(()=>{const h=new Date().getHours();return h<11?"morning":h<15?"midday":h<20?"evening":"bedtime"})(),custom=null;
+const load=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+function wrap(ctx,text,w){const out=[];text.split(/\n/).forEach(p=>{if(!p.trim()){out.push("");return}let l="";p.split(/\s+/).forEach(wd=>{const t=l?l+" "+wd:wd;if(ctx.measureText(t).width>w&&l){out.push(l);l=wd}else l=t});out.push(l)});return out}
+function thumbs(){const t=$("piThumbs");if(!t)return;t.innerHTML=T.map(a=>'<button type="button" class="secondary" data-pi="'+a[0]+'" style="padding:4px;'+(sel==a[0]?'outline:2px solid #f5c542':'')+'"><img src="prayer-'+a[0]+'.jpg" alt="'+a[1]+'" style="width:54px;height:75px;object-fit:cover;border-radius:6px;display:block"><span style="font-size:.7rem">'+a[1]+'</span></button>').join("")+(custom?'<button type="button" class="secondary" data-pi="custom" style="padding:4px;'+(sel=="custom"?'outline:2px solid #f5c542':'')+'"><img src="'+custom.src+'" style="width:54px;height:75px;object-fit:cover;border-radius:6px;display:block"><span style="font-size:.7rem">Yours</span></button>':"")}
+async function draw(){const cv=$("piCanvas");if(!cv)return;const txt=$("piText").value.trim()||"Lord, thank You for this day. Amen.",foot=$("piFoot").value.trim(),cu=sel=="custom"&&custom;let img,W,H,box;
+ if(cu){img=custom;W=1080;H=1350;box=[.1,.58,.9,.92]}else{try{img=IM[sel]||(IM[sel]=await load("prayer-"+sel+".jpg"))}catch(_){return}W=Math.round(img.width*1.5);H=Math.round(img.height*1.5);box=[.12,.645,.88,.865]}
+ cv.width=W;cv.height=H;const x=cv.getContext("2d");
+ if(cu){const r=Math.max(W/img.width,H/img.height),w=img.width*r,h=img.height*r;x.drawImage(img,(W-w)/2,(H-h)/2,w,h);const g=x.createLinearGradient(0,H*.45,0,H);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(.35,"rgba(0,0,0,.62)");g.addColorStop(1,"rgba(0,0,0,.8)");x.fillStyle=g;x.fillRect(0,H*.45,W,H*.55)}else x.drawImage(img,0,0,W,H);
+ const bx=box[0]*W,by=box[1]*H,bw=(box[2]-box[0])*W,bh=(box[3]-box[1])*H,fh=foot?bh*.14:0,fam='Georgia,"Times New Roman",serif';let fs=W*.052,lines,lh;
+ for(;fs>W*.02;fs--){x.font=fs+"px "+fam;lines=wrap(x,txt,bw);lh=fs*1.32;if(lines.length*lh<=bh-fh)break}
+ x.textAlign="center";x.textBaseline="top";x.fillStyle=cu?"#fff":"#4a2f1a";if(cu){x.shadowColor="rgba(0,0,0,.6)";x.shadowBlur=8}
+ const y0=by+(bh-fh-lines.length*lh)/2;lines.forEach((l,i)=>x.fillText(l,bx+bw/2,y0+i*lh));
+ if(foot){x.shadowBlur=0;x.font="italic "+fs*.8+"px "+fam;x.fillStyle=cu?"#ffd9a0":"#7a1f1f";x.fillText(foot,bx+bw/2,by+bh-fh*.85)}}
+const blob=()=>new Promise(r=>$("piCanvas").toBlob(r,"image/png"));
+document.addEventListener("click",async e=>{const q=s=>e.target.closest&&e.target.closest(s);let b;
+ if(b=q("[data-pi]")){sel=b.dataset.pi;thumbs();draw()}
+ else if(q("[data-pi-add]"))$("piFile").click();
+ else if(q("[data-pi-use]")){const v=$("prayer")?.value||"";if(!v.trim()){toast("Write a prayer above first");return}$("piText").value=v.trim();draw()}
+ else if(q("[data-pi-share]")){await draw();const bl=await blob(),f=new File([bl],"prayer.png",{type:"image/png"});try{if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f]});else{const a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download="prayer.png";a.click()}}catch(_){}}
+ else if(q("[data-pi-dl]")){await draw();const a=document.createElement("a");a.href=URL.createObjectURL(await blob());a.download="prayer.png";a.click()}});
+$("piFile").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{custom=await load(URL.createObjectURL(f));sel="custom";thumbs();draw()}catch(_){toast("Couldn't open that picture")}e.target.value=""});
+["piText","piFoot"].forEach(i=>$(i).addEventListener("input",draw));
+thumbs();setTimeout(draw,600);document.addEventListener("click",ev=>{if(ev.target.closest&&ev.target.closest("[data-screen=journal]"))setTimeout(draw,200)});
+})();
 })();
 </script>
 

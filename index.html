@@ -177,7 +177,7 @@ body.light .toast{background:#172033;color:#fff}
     <div class="searchRow"><input id="search" placeholder="🔍 Search the entire Bible" style="margin-top:12px"><button type="button" class="secondary" data-action="clearSearch" style="margin-top:12px">Clear</button></div>
     <div id="searchResults" style="margin-top:10px"></div>
   </div>
-  <div class="card readingTools"><button type="button" class="secondary" data-action="prevChapter">← Previous</button><button type="button" class="secondary" data-action="nextChapter">Next →</button><button type="button" class="secondary" data-action="fontMinus">A−</button><button type="button" class="secondary" data-action="fontPlus">A+</button><button type="button" class="secondary" data-action="speak">🔊 Listen</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
+  <div class="card readingTools"><button type="button" class="secondary" data-action="prevChapter">← Previous</button><button type="button" class="secondary" data-action="nextChapter">Next →</button><button type="button" class="secondary" data-action="fontMinus">A−</button><button type="button" class="secondary" data-action="fontPlus">A+</button><button type="button" class="secondary" data-action="speak">🔊 Listen</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button><div style="flex-basis:100%;display:grid;gap:10px;margin-top:4px"><select id="voiceSel" aria-label="Reading voice"></select><label class="muted" style="display:flex;align-items:center;gap:10px">🐢 Speed <input id="speechRate" type="range" min="0.5" max="1.3" step="0.05" value="0.85" style="flex:1;padding:0"><b id="speechRateVal">0.85×</b></label></div></div>
   <div id="chapterCard" class="card" hidden></div>
   <div id="readingToolsBottom" class="card readingTools" hidden><button type="button" class="secondary" data-action="prevChapter">← Previous</button><button type="button" class="secondary" data-action="nextChapter">Next →</button><button type="button" class="secondary" data-action="fontMinus">A−</button><button type="button" class="secondary" data-action="fontPlus">A+</button><button type="button" class="secondary" data-action="speak">🔊 Listen</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
   <div id="verseCard" class="card" hidden></div>
@@ -460,7 +460,6 @@ body.light .toast{background:#172033;color:#fff}
   <h3>Read aloud</h3>
   <p class="muted" style="margin:0">Open a Bible chapter, devotional, study or sacred text, then tap Read. Uses your device's voices.</p>
   <div class="bar"><button type="button" class="primary" data-action="speak">🔊 Read this page</button><button type="button" class="secondary" data-action="speakPause">⏸ Pause / resume</button><button type="button" class="secondary" data-action="speakStop">⏹ Stop</button></div>
-  <div class="bar"><select id="speechRate" aria-label="Speed"><option value=".8">Slower</option><option value="1" selected>Normal</option><option value="1.2">Faster</option><option value="1.4">Fastest</option></select><select id="voiceSel" aria-label="Voice"></select></div>
   <div class="bar"><select class="voiceModeSel" aria-label="Voice style"><option value="">Standard voice</option><option value="jewish">Jewish voice — English + Hebrew</option><option value="muslim">Muslim voice — English + Arabic</option></select></div><p class="muted voiceModeNote" style="margin:0 0 6px;font-size:.85rem"></p>
   <label><input id="autoNext" type="checkbox" style="width:auto;margin-right:8px">Keep reading into the next Bible chapter</label>
   <h3>Gospel music</h3>
@@ -1854,7 +1853,7 @@ omerRender();parshaRender();wallLoad();setInterval(omerRender,60000);
 let spQ=[],spI=0,spOn=false,tracks=[],cur=-1,spStarted=false,spWatch=null;
 const canSpeak=()=>"speechSynthesis" in window;
 const onScr=id=>!!document.querySelector("#"+id+".screen.active");
-function fillVoices(){const sel=$("voiceSel");if(!sel||!canSpeak())return;const v=speechSynthesis.getVoices();setTimeout(()=>{try{vmSync()}catch(_){}},0);sel.innerHTML='<option value="">Automatic voice</option>'+v.map(x=>'<option value="'+escapeAttr(x.name)+'">'+escapeHtml(x.name+" ("+x.lang+")")+'</option>').join("");}
+function fillVoices(){const sel=$("voiceSel");if(!sel||!canSpeak())return;const bad=/^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Princess|Agnes|Bruce)\b/i,all=speechSynthesis.getVoices().filter(x=>/^en/i.test(x.lang)&&!bad.test(x.name)),good=x=>/premium|enhanced|neural|natural|online|siri|google/i.test(x.name+" "+x.voiceURI),reg=x=>{const m=x.lang.replace("_","-").split("-")[1];return m?" ("+m.toUpperCase()+")":""},cur=sel.value||localStorage.getItem("bpm_voicename")||"";all.sort((a,b)=>(good(b)-good(a))||a.name.localeCompare(b.name));setTimeout(()=>{try{vmSync()}catch(_){}},0);sel.innerHTML='<option value="">Automatic voice (best match)</option>'+all.map(x=>'<option value="'+escapeAttr(x.name)+'">'+(good(x)?"★ ":"")+escapeHtml(x.name+reg(x))+'</option>').join("");if(cur&&all.some(x=>x.name===cur))sel.value=cur;}
 function rowsOf(card){return [...card.querySelectorAll(".verseRow")].map(el=>{const c=el.cloneNode(true);c.querySelectorAll(".verseNum,button").forEach(x=>x.remove());return{el,text:c.textContent.trim()}}).filter(x=>x.text);}
 function speakCurrent(){
   if(!canSpeak()){toast("Read aloud is not supported in this browser");return}
@@ -2185,6 +2184,9 @@ document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest('[da
 let done=false;setInterval(()=>{if(isAdmin&&!done){done=true;insights()}if(!isAdmin)done=false},3000);
 setTimeout(logVisit,2500);
 })();
+
+(function(){const r=$("speechRate"),v=$("speechRateVal"),vs=$("voiceSel");if(r){const sv=parseFloat(localStorage.getItem("bpm_rate"));if(sv>=.5&&sv<=1.3)r.value=sv;const sh=()=>{if(v)v.textContent=Number(r.value).toFixed(2).replace(/0$/,"")+"×"};sh();r.addEventListener("input",()=>{sh();localStorage.setItem("bpm_rate",r.value)})}
+if(vs)vs.addEventListener("change",()=>localStorage.setItem("bpm_voicename",vs.value))})();
 })();
 </script>
 
